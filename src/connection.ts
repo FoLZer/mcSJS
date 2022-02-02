@@ -305,8 +305,12 @@ export default class Connection {
                         }
                         this.sendPacket(new packets.Server.Login[2](v3uuid(this.username, "d8238f96-d2e9-472e-bfca-78f34fa44e9f"), this.username))
                         this.sendPacket(new packets.Server.Play[38](0,false,0,-1,["minecraft:overworld"],dimension_codec,(((dimension_codec.payload[0] as NBT_Tag_Compound).payload[1] as NBT_Tag_List).payload[0] as NBT_Tag_Compound).payload[2] as NBT_Tag_Compound,"minecraft:overworld",0n,100,3,3,false,true,false,false));
-                        this.sendPacket(new packets.Server.Play[24]("minecraft:brand",Buffer.from("vanilla").buffer as any));
+                        this.sendPacket(new packets.Server.Play[24]("minecraft:brand",Buffer.from("mcSJS") as any));
                         this.sendPacket(new packets.Server.Play[14](0,true));
+                        this.sendPacket(new packets.Server.Play[50](false, false, false, false, 0.05, 0.1));
+                        //skip packet 0x05, huh?
+                        this.sendPacket(new packets.Server.Play[72](0));
+                        this.sendPacket(new packets.Server.Play[102]([]));
                         
                         break;
                         const verify_token = Buffer.alloc(4);

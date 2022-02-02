@@ -348,6 +348,44 @@ const packets = {
                     buf.writeFloatBE(this.fov_modif, 5);
                     return buf;
                 }
+            },
+            72: class HeldItemChange extends ServerPacket {
+                slot: number;
+
+                constructor(slot: number) {
+                    super(72);
+                    this.slot = slot;
+                }
+
+                public Serealize(): Buffer {
+                    const buf = Buffer.allocUnsafe(1);
+                    buf.writeUInt8(this.slot, 0);
+                    return buf;
+                }
+            },
+            102: class DeclareRecipes extends ServerPacket {
+                recipes: {
+                    type: string,
+                    recipe_id: string,
+                    data?: any
+                }[];
+
+                constructor(recipes: {type: string,recipe_id: string,data?: any}[]) {
+                    super(102);
+                    this.recipes = recipes;
+                }
+
+                public Serealize(): Buffer {
+                    const buf = Buffer.allocUnsafe(BufferAccess.getVarIntLength(this.recipes.length));
+                    const bufAcc = new BufferAccess(buf);
+                    bufAcc.writeVarInt(this.recipes.length);
+                    for(const recipe of this.recipes) {
+                        bufAcc.writeString(recipe.type);
+                        bufAcc.writeString(recipe.recipe_id);
+                        //TODO: data
+                    }
+                    return buf;
+                }
             }
         }
     }

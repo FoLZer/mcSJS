@@ -30,63 +30,63 @@ export default class BufferAccess {
     }
 
     public readUint16() {
-        const data = this._buf.readUInt16LE(this._pos);
+        const data = this._buf.readUInt16BE(this._pos);
         this._pos += 2;
         return data;
     }
 
     public writeUint16(data: number) {
-        this._buf.writeUInt16LE(data, this._pos);
+        this._buf.writeUInt16BE(data, this._pos);
         this._pos += 2;
     }
 
     public readInt16() {
-        const data = this._buf.readInt16LE(this._pos);
+        const data = this._buf.readInt16BE(this._pos);
         this._pos += 2;
         return data;
     }
 
     public writeInt16(data: number) {
-        this._buf.writeInt16LE(data, this._pos);
+        this._buf.writeInt16BE(data, this._pos);
         this._pos += 2;
     }
 
     public readUint32() {
-        const data = this._buf.readUInt32LE(this._pos);
+        const data = this._buf.readUInt32BE(this._pos);
         this._pos += 4;
         return data;
     }
 
     public writeUint32(data: number) {
-        this._buf.writeUInt32LE(data, this._pos);
+        this._buf.writeUInt32BE(data, this._pos);
         this._pos += 4;
     }
 
     public readInt32() {
-        const data = this._buf.readInt32LE(this._pos);
+        const data = this._buf.readInt32BE(this._pos);
         this._pos += 4;
         return data;
     }
 
     public writeInt32(data: number) {
-        this._buf.writeInt32LE(data, this._pos);
+        this._buf.writeInt32BE(data, this._pos);
         this._pos += 4;
     }
 
     public readUint64() {
-        const data = this._buf.readBigUInt64LE(this._pos);
+        const data = this._buf.readBigUInt64BE(this._pos);
         this._pos += 8;
         return data;
     }
 
     public readInt64() {
-        const data = this._buf.readBigInt64LE(this._pos);
+        const data = this._buf.readBigInt64BE(this._pos);
         this._pos += 8;
         return data;
     }
 
     public writeInt64(data: bigint) {
-        this._buf.writeBigInt64LE(data, this._pos);
+        this._buf.writeBigInt64BE(data, this._pos);
         this._pos += 8;
     }
 
@@ -106,13 +106,13 @@ export default class BufferAccess {
     }
 
     public readFloat() {
-        const data = this._buf.readFloatLE(this._pos);
+        const data = this._buf.readFloatBE(this._pos);
         this._pos += 4;
         return data;
     }
 
     public readDouble() {
-        const data = this._buf.readDoubleLE(this._pos);
+        const data = this._buf.readDoubleBE(this._pos);
         this._pos += 8;
         return data;
     }
