@@ -311,7 +311,38 @@ export default class Connection {
                         //skip packet 0x05, huh?
                         this.sendPacket(new packets.Server.Play[72](0));
                         this.sendPacket(new packets.Server.Play[102]([]));
-                        
+                        this.sendPacket(new packets.Server.Play[103]([
+                            {tag_type:"minecraft:block",tag_ar:[]},
+                            {tag_type:"minecraft:item",tag_ar:[]},
+                            {tag_type:"minecraft:fluid",tag_ar:[]},
+                            {tag_type:"minecraft:entity_type",tag_ar:[]},
+                            {tag_type:"minecraft:game_event",tag_ar:[]}
+                        ]));
+                        this.sendPacket(new packets.Server.Play[27](0,24));
+                        this.sendPacket(new packets.Server.Play[18]([],0));
+                        this.sendPacket(new packets.Server.Play[57](0,false,false,false,false,false,false,false,false,[],[]));
+                        this.sendPacket(new packets.Server.Play[56](0,1,0,0,0,0,0,true));
+                        this.sendPacket(new packets.Server.Play[54](0,[
+                            {
+                                uuid: "",
+                                name: "",
+                                properties: [],
+                                gamemode: 0,
+                                ping: -1,
+                                has_display_name: false
+                            }
+                        ]));
+                        this.sendPacket(new packets.Server.Play[54](0,[
+                            {
+                                uuid: "",
+                                name: "",
+                                properties: [],
+                                gamemode: 0,
+                                ping: -1,
+                                has_display_name: false
+                            }
+                        ]));
+                        this.sendPacket(new packets.Server.Play[73](0,0));
                         break;
                         const verify_token = Buffer.alloc(4);
                         verify_token.writeUInt32LE(Math.random() * 4294967295);

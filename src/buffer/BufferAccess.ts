@@ -111,10 +111,20 @@ export default class BufferAccess {
         return data;
     }
 
+    public writeFloat(value: number) {
+        this._buf.writeFloatBE(value, this._pos);
+        this._pos += 4;
+    }
+
     public readDouble() {
         const data = this._buf.readDoubleBE(this._pos);
         this._pos += 8;
         return data;
+    }
+
+    public writeDouble(value: number) {
+        this._buf.writeDoubleBE(value, this._pos);
+        this._pos += 8;
     }
 
     public readBoolean() {

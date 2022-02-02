@@ -239,6 +239,89 @@ const packets = {
                     return buf;
                 }
             },
+            18: class DeclareCommands extends ServerPacket {
+                nodes: {
+                    flags: number,
+                    children: number[],
+                    redirect_node?: number,
+                    name?: string,
+                    parser?: string,
+                    properties?: number,
+                    suggestions_type?: string
+                }[]
+                root_index: number
+
+                constructor(nodes: {
+                    flags: number,
+                    children: number[],
+                    redirect_node?: number,
+                    name?: string,
+                    parser?: string,
+                    properties?: any,
+                    suggestions_type?: string
+                }[], root_index: number) {
+                    super(18);
+                    this.nodes = nodes;
+                    this.root_index = root_index;
+                }
+
+                public Serealize(): Buffer {
+                    let s = BufferAccess.getVarIntLength(this.nodes.length);
+                    for(const node of this.nodes) {
+                        s += 1;
+                        s += BufferAccess.getVarIntLength(node.children.length);
+                        for(const ch of node.children) {
+                            s += BufferAccess.getVarIntLength(ch);
+                        }
+                        if((node.flags & 0x08) && node.redirect_node) {
+                            s += BufferAccess.getVarIntLength(node.redirect_node);
+                        }
+                        if((((node.flags & 0x03) & 0x01) || ((node.flags & 0x03) & 0x02)) && node.name) {
+                            s += BufferAccess.getVarIntLength(Buffer.byteLength(node.name));
+                            s += Buffer.byteLength(node.name);
+                        }
+                        if(((node.flags & 0x03) & 0x02) && node.parser) {
+                            s += BufferAccess.getVarIntLength(Buffer.byteLength(node.parser));
+                            s += Buffer.byteLength(node.parser);
+                        }
+                        if(((node.flags & 0x03) & 0x02) && node.properties) {
+                            //TODO: properties
+                        }
+                        if(((node.flags & 0x03) & 0x10) && node.suggestions_type) {
+                            s += BufferAccess.getVarIntLength(Buffer.byteLength(node.suggestions_type));
+                            s += Buffer.byteLength(node.suggestions_type);
+                        }
+                    }
+                    s += BufferAccess.getVarIntLength(this.root_index);
+                    const buf = Buffer.allocUnsafe(s);
+                    const bufAcc = new BufferAccess(buf);
+                    bufAcc.writeVarInt(this.nodes.length);
+                    for(const node of this.nodes) {
+                        bufAcc.writeInt8(node.flags);
+                        bufAcc.writeVarInt(node.children.length);
+                        for(const ch of node.children) {
+                            bufAcc.writeVarInt(ch);
+                        }
+                        if((node.flags & 0x08) && node.redirect_node) {
+                            bufAcc.writeVarInt(node.redirect_node);
+                        }
+                        if((((node.flags & 0x03) & 0x01) || ((node.flags & 0x03) & 0x02)) && node.name) {
+                            bufAcc.writeString(node.name);
+                        }
+                        if(((node.flags & 0x03) & 0x02) && node.parser) {
+                            bufAcc.writeString(node.parser);
+                        }
+                        if(((node.flags & 0x03) & 0x02) && node.properties) {
+                            //TODO: properties
+                        }
+                        if(((node.flags & 0x03) & 0x10) && node.suggestions_type) {
+                            bufAcc.writeString(node.suggestions_type);
+                        }
+                    }
+                    bufAcc.writeVarInt(this.root_index);
+                    return buf;
+                }
+            },
             24: class PluginMessage extends ServerPacket {
                 channel: string;
                 data: number[];
@@ -254,6 +337,24 @@ const packets = {
                     const bufAcc = new BufferAccess(buf);
                     bufAcc.writeString(this.channel);
                     bufAcc.writeBytes(this.data);
+                    return buf;
+                }
+            },
+            27: class EntityStatus extends ServerPacket {
+                entity_id: number;
+                entity_status: number;
+
+                constructor(entity_id: number, entity_status: number) {
+                    super(27);
+                    this.entity_id = entity_id;
+                    this.entity_status = entity_status;
+                }
+
+                public Serealize(): Buffer {
+                    const buf = Buffer.allocUnsafe(4+1);
+                    const bufAcc = new BufferAccess(buf);
+                    bufAcc.writeInt32(this.entity_id);
+                    bufAcc.writeInt8(this.entity_status);
                     return buf;
                 }
             },
@@ -349,6 +450,223 @@ const packets = {
                     return buf;
                 }
             },
+            54: class PlayerInfo extends ServerPacket {
+                action: number;
+                players: any[];
+
+                constructor(action: number, players: any[]) {
+                    super(54);
+                    this.action = action;
+                    this.players = players;
+                }
+
+                public Serealize(): Buffer {
+                    let s = BufferAccess.getVarIntLength(this.action);
+                    s += BufferAccess.getVarIntLength(this.players.length);
+                    for(const player of this.players) {
+                        s += 16;
+                        switch(this.action) {
+                            case 0: {
+                                s += BufferAccess.getVarIntLength(Buffer.byteLength(player.name))
+                                s += Buffer.byteLength(player.name);
+                                s += BufferAccess.getVarIntLength(player.properties.length);
+                                for(const property of player.properties) {
+                                    s += BufferAccess.getVarIntLength(Buffer.byteLength(property.name))
+                                    s += Buffer.byteLength(property.name);
+                                    s += BufferAccess.getVarIntLength(Buffer.byteLength(property.value))
+                                    s += Buffer.byteLength(property.value);
+                                    s += 1;
+                                    if(property.is_signed) {
+                                        s += BufferAccess.getVarIntLength(Buffer.byteLength(property.signature))
+                                        s += Buffer.byteLength(property.signature);
+                                    }
+                                }
+                                s += BufferAccess.getVarIntLength(player.gamemode);
+                                s += BufferAccess.getVarIntLength(player.ping);
+                                s += 1;
+                                if(player.has_display_name) {
+                                    s += BufferAccess.getVarIntLength(Buffer.byteLength(player.display_name))
+                                    s += Buffer.byteLength(player.display_name);
+                                }
+                                break;
+                            }
+                            case 1: {
+                                s += BufferAccess.getVarIntLength(player.gamemode);
+                                break;
+                            }
+                            case 2: {
+                                s += BufferAccess.getVarIntLength(player.ping);
+                                break;
+                            }
+                            case 3: {
+                                s += 1;
+                                if(player.has_display_name) {
+                                    s += BufferAccess.getVarIntLength(Buffer.byteLength(player.display_name));
+                                    s += Buffer.byteLength(player.display_name);
+                                }
+                                break;
+                            }
+                            case 4: {
+                                break;
+                            }
+                            default: {
+                                throw new Error("Unknown action");
+                            }
+                        }
+                    }
+                    const buf = Buffer.allocUnsafe(s);
+                    const bufAcc = new BufferAccess(buf);
+                    bufAcc.writeVarInt(this.action);
+                    bufAcc.writeVarInt(this.players.length);
+                    for(const player of this.players) {
+                        bufAcc.writeBuf(UUID.parse(player.uuid));
+                        switch(this.action) {
+                            case 0: {
+                                bufAcc.writeString(player.name);
+                                bufAcc.writeVarInt(player.properties.length);
+                                for(const property of player.properties) {
+                                    bufAcc.writeString(property.name);
+                                    bufAcc.writeString(property.value);
+                                    bufAcc.writeBoolean(property.is_signed);
+                                    if(property.is_signed) {
+                                        bufAcc.writeString(property.signature);
+                                    }
+                                }
+                                bufAcc.writeVarInt(player.gamemode);
+                                bufAcc.writeVarInt(player.ping);
+                                bufAcc.writeBoolean(player.has_display_name);
+                                if(player.has_display_name) {
+                                    bufAcc.writeString(player.display_name);
+                                }
+                                break;
+                            }
+                            case 1: {
+                                bufAcc.writeVarInt(player.gamemode);
+                                break;
+                            }
+                            case 2: {
+                                bufAcc.writeVarInt(player.ping);
+                                break;
+                            }
+                            case 3: {
+                                bufAcc.writeBoolean(player.has_display_name);
+                                if(player.has_display_name) {
+                                    bufAcc.writeString(player.display_name);
+                                }
+                                break;
+                            }
+                            case 4: {
+                                break;
+                            }
+                        }
+                    }
+                    return buf;
+                }
+            },
+            56: class PlayerPositionAndLook extends ServerPacket {
+                x: number;
+                y: number;
+                z: number;
+                yaw: number;
+                pitch: number;
+                flags: number;
+                teleport_id: number;
+                dismount_vehicle: boolean;
+
+                constructor(x: number,y: number,z: number,yaw: number,pitch: number,rel_flags: number,teleport_id: number,dismount_vehicle: boolean) {
+                    super(56);
+                    this.x = x;
+                    this.y = y;
+                    this.z = z;
+                    this.yaw = yaw;
+                    this.pitch = pitch;
+                    this.flags = rel_flags;
+                    this.teleport_id = teleport_id;
+                    this.dismount_vehicle = dismount_vehicle;
+                }
+
+                public Serealize(): Buffer {
+                    const buf = Buffer.allocUnsafe(8+8+8+4+4+1+BufferAccess.getVarIntLength(this.teleport_id)+1);
+                    const bufAcc = new BufferAccess(buf);
+                    bufAcc.writeDouble(this.x);
+                    bufAcc.writeDouble(this.y);
+                    bufAcc.writeDouble(this.z);
+                    bufAcc.writeFloat(this.yaw);
+                    bufAcc.writeFloat(this.pitch);
+                    bufAcc.writeInt8(this.flags);
+                    bufAcc.writeVarInt(this.teleport_id);
+                    bufAcc.writeBoolean(this.dismount_vehicle);
+                    return buf;
+                }
+            },
+            57: class UnlockRecipes extends ServerPacket {
+                action: number;
+                crafting_recipe_book_open: boolean;
+                crafting_recipe_book_filter_active: boolean;
+                smelting_recipe_book_open: boolean;
+                smelting_recipe_book_filter_active: boolean;
+                blast_furnace_recipe_book_open: boolean;
+                blast_furnace_recipe_book_filter_active: boolean;
+                smoker_recipe_book_open: boolean;
+                smoker_recipe_book_filter_active: boolean;
+                recipe_ids_1: string[];
+                recipe_ids_2?: string[];
+
+                constructor(action: number,crafting_recipe_book_open: boolean,crafting_recipe_book_filter_active: boolean,smelting_recipe_book_open: boolean,smelting_recipe_book_filter_active: boolean,blast_furnace_recipe_book_open: boolean,blast_furnace_recipe_book_filter_active: boolean,smoker_recipe_book_open: boolean,smoker_recipe_book_filter_active: boolean,recipe_ids_1: string[],recipe_ids_2?: string[]) {
+                    super(57);
+                    this.action = action;
+                    this.crafting_recipe_book_open = crafting_recipe_book_open;
+                    this.crafting_recipe_book_filter_active = crafting_recipe_book_filter_active;
+                    this.smelting_recipe_book_open = smelting_recipe_book_open;
+                    this.smelting_recipe_book_filter_active = smelting_recipe_book_filter_active;
+                    this.blast_furnace_recipe_book_open = blast_furnace_recipe_book_open;
+                    this.blast_furnace_recipe_book_filter_active = blast_furnace_recipe_book_filter_active;
+                    this.smoker_recipe_book_open = smoker_recipe_book_open;
+                    this.smoker_recipe_book_filter_active = smelting_recipe_book_filter_active;
+                    this.recipe_ids_1 = recipe_ids_1;
+                    this.recipe_ids_2 = recipe_ids_2;
+                }
+
+                public Serealize(): Buffer {
+                    let s = BufferAccess.getVarIntLength(this.action)+1+1+1+1+1+1+1+1+BufferAccess.getVarIntLength(this.recipe_ids_1.length);
+                    for(const id of this.recipe_ids_1) {
+                        s += BufferAccess.getVarIntLength(Buffer.byteLength(id));
+                        s += Buffer.byteLength(id);
+                    }
+                    if(this.action == 0) {
+                        if(!this.recipe_ids_2) {
+                            throw new Error("recipe_ids_2 is undefined!");
+                        }
+                        s += BufferAccess.getVarIntLength(this.recipe_ids_2.length);
+                        for(const id of this.recipe_ids_2) {
+                            s += BufferAccess.getVarIntLength(Buffer.byteLength(id));
+                            s += Buffer.byteLength(id);
+                        }
+                    }
+                    const buf = Buffer.allocUnsafe(s);
+                    const bufAcc = new BufferAccess(buf);
+                    bufAcc.writeVarInt(this.action);
+                    bufAcc.writeBoolean(this.crafting_recipe_book_open);
+                    bufAcc.writeBoolean(this.crafting_recipe_book_filter_active);
+                    bufAcc.writeBoolean(this.smelting_recipe_book_open);
+                    bufAcc.writeBoolean(this.smelting_recipe_book_filter_active);
+                    bufAcc.writeBoolean(this.blast_furnace_recipe_book_open);
+                    bufAcc.writeBoolean(this.blast_furnace_recipe_book_filter_active);
+                    bufAcc.writeBoolean(this.smoker_recipe_book_open);
+                    bufAcc.writeBoolean(this.smoker_recipe_book_filter_active);
+                    bufAcc.writeVarInt(this.recipe_ids_1.length);
+                    for(const id of this.recipe_ids_1) {
+                        bufAcc.writeString(id);
+                    }
+                    if(this.action == 0) {
+                        bufAcc.writeVarInt((this.recipe_ids_2 as string[]).length);
+                        for(const id of (this.recipe_ids_2 as string[])) {
+                            bufAcc.writeString(id);
+                        }
+                    }
+                    return buf;
+                }
+            },
             72: class HeldItemChange extends ServerPacket {
                 slot: number;
 
@@ -360,6 +678,24 @@ const packets = {
                 public Serealize(): Buffer {
                     const buf = Buffer.allocUnsafe(1);
                     buf.writeUInt8(this.slot, 0);
+                    return buf;
+                }
+            },
+            73: class UpdateViewPosition extends ServerPacket {
+                chunk_x: number;
+                chunk_z: number;
+
+                constructor(chunk_x: number, chunk_z: number) {
+                    super(73);
+                    this.chunk_x = chunk_x;
+                    this.chunk_z = chunk_z;
+                }
+
+                public Serealize(): Buffer {
+                    const buf = Buffer.allocUnsafe(BufferAccess.getVarIntLength(this.chunk_x)+BufferAccess.getVarIntLength(this.chunk_z));
+                    const bufAcc = new BufferAccess(buf);
+                    bufAcc.writeVarInt(this.chunk_x);
+                    bufAcc.writeVarInt(this.chunk_z);
                     return buf;
                 }
             },
@@ -383,6 +719,58 @@ const packets = {
                         bufAcc.writeString(recipe.type);
                         bufAcc.writeString(recipe.recipe_id);
                         //TODO: data
+                    }
+                    return buf;
+                }
+            },
+            103: class Tags extends ServerPacket {
+                tags: {
+                    tag_type: string,
+                    tag_ar: {
+                        tag_name: string,
+                        entries: number[]
+                    }[]
+                }[]
+
+                constructor(tags: {
+                    tag_type: string,
+                    tag_ar: {
+                        tag_name: string,
+                        entries: number[]
+                    }[]
+                }[]) {
+                    super(103);
+                    this.tags = tags;
+                }
+
+                public Serealize(): Buffer {
+                    let s = BufferAccess.getVarIntLength(this.tags.length);
+                    for(const tag of this.tags) {
+                        s += BufferAccess.getVarIntLength(Buffer.byteLength(tag.tag_type));
+                        s += Buffer.byteLength(tag.tag_type);
+                        s += BufferAccess.getVarIntLength(tag.tag_ar.length);
+                        for(const tag1 of tag.tag_ar) {
+                            s += BufferAccess.getVarIntLength(Buffer.byteLength(tag1.tag_name));
+                            s += Buffer.byteLength(tag1.tag_name);
+                            s += BufferAccess.getVarIntLength(tag1.entries.length)
+                            for(const entry of tag1.entries) {
+                                s += BufferAccess.getVarIntLength(entry);
+                            }
+                        }
+                    }
+                    const buf = Buffer.allocUnsafe(s);
+                    const bufAcc = new BufferAccess(buf);
+                    bufAcc.writeVarInt(this.tags.length);
+                    for(const tag of this.tags) {
+                        bufAcc.writeString(tag.tag_type);
+                        bufAcc.writeVarInt(tag.tag_ar.length);
+                        for(const tag1 of tag.tag_ar) {
+                            bufAcc.writeString(tag1.tag_name);
+                            bufAcc.writeVarInt(tag1.entries.length);
+                            for(const entry of tag1.entries) {
+                                bufAcc.writeVarInt(entry);
+                            }
+                        }
                     }
                     return buf;
                 }
