@@ -313,11 +313,11 @@ export default class Connection {
                         this.sendPacket(new packets.Server.Play[50](false, false, false, false, 0.05, 0.1));
                         //skip packet 0x05, huh?
                         this.sendPacket(new packets.Server.Play[72](0));
-                        this.sendPacket(new packets.Server.Play[102]([]));
-                        this.sendPacket(new packets.Server.Play[103](tags));
-                        this.sendPacket(new packets.Server.Play[27](0,24));
-                        this.sendPacket(new packets.Server.Play[18](commands,0));
-                        this.sendPacket(new packets.Server.Play[57](0,false,false,false,false,false,false,false,false,[],[]));
+                        //this.sendPacket(new packets.Server.Play[102]([]));
+                        //this.sendPacket(new packets.Server.Play[103](tags));
+                        //this.sendPacket(new packets.Server.Play[27](0,24));
+                        //this.sendPacket(new packets.Server.Play[18](commands,0));
+                        //this.sendPacket(new packets.Server.Play[57](0,false,false,false,false,false,false,false,false,[],[]));
                         this.sendPacket(new packets.Server.Play[56](0,1,0,0,0,0,0,true));
                         this.sendPacket(new packets.Server.Play[54](0,[
                             {
