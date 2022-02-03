@@ -4,7 +4,7 @@ import https from "https";
 import { v3 as v3uuid } from "uuid";
 import BufferAccess from "./buffer/BufferAccess";
 import { packets, ClientPacket, ServerPacket } from "./packets";
-import { NBT_Tag_Byte, NBT_Tag_Compound, NBT_Tag_Double, NBT_Tag_Float, NBT_Tag_Int, NBT_Tag_List, NBT_Tag_Long, NBT_Tag_String, NBT_Tag_types } from "./NBT";
+import { NBT_Tag_Byte, NBT_Tag_Compound, NBT_Tag_Double, NBT_Tag_Float, NBT_Tag_Int, NBT_Tag_List, NBT_Tag_Long, NBT_Tag_Long_Array, NBT_Tag_String, NBT_Tag_types } from "./NBT";
 import commands from "./commands_graph";
 import tags from "./tags";
 
@@ -340,6 +340,22 @@ export default class Connection {
                             }
                         ]));
                         this.sendPacket(new packets.Server.Play[73](0,0));
+                        this.sendPacket(new packets.Server.Play[34](
+                            0,
+                            0,
+                            new NBT_Tag_Compound("",[
+                                new NBT_Tag_Long_Array("MOTION_BLOCKING",new Array(36).fill([0,0]))
+                            ]),
+                            [],
+                            [],
+                            true,
+                            [],
+                            [],
+                            [],
+                            [],
+                            [],
+                            []
+                            ));
                         break;
                         const verify_token = Buffer.alloc(4);
                         verify_token.writeUInt32LE(Math.random() * 4294967295);
