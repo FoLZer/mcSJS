@@ -1,9 +1,16 @@
 import { decompressXZ, Dimensions } from "./World";
 import path from "path";
 import fs from "fs";
+import { promisify } from "util";
+import zlib from "zlib";
+import { NBT_Tag, parseTag } from "../NBT";
+const gunzip = promisify(zlib.gunzip);
+const zlib_unzip = promisify(zlib.unzip);
 
 export class Region {
-    region_file_path: string;
+    private fd?: fs.promises.FileHandle;
+    private in_use: number;
+    private region_file_path: string;
 
     constructor(world_path: string, dimension: Dimensions, region_xz: string) {
         const [region_x,region_z] = decompressXZ(region_xz);
@@ -21,6 +28,7 @@ export class Region {
                 break;
             }
         }
+        this.in_use = 0;
     }
 
     public static chunkCoordsToRegion(chunk_x: number, chunk_z: number) {
@@ -30,7 +38,7 @@ export class Region {
     }
 
     private chunkCoordsToRegLoc(chunk_x: number, chunk_z: number) {
-        const offset = 4 * ((chunk_x & 31) + (chunk_z & 31) * 32);
+        const offset = 4 * ((chunk_x % 32) + (chunk_z % 32) * 32);
         return offset;
     }
 
@@ -42,12 +50,51 @@ export class Region {
         return this.locOffsetToTimestampOffset(this.chunkCoordsToRegLoc(chunk_x,chunk_z));
     }
 
-    private async readChunk(chunk_x: number, chunk_z: number) {
-        const fd = await fs.promises.open(this.region_file_path, 'r');
-        const regLoc = this.chunkCoordsToRegLoc(chunk_x, chunk_z);
-        const locBuf = (await fd.read(Buffer.allocUnsafe(5),1,4,regLoc)).buffer;
-        locBuf[0] = 0x00;
-        const chunk_offset = locBuf.readInt32BE(0);
-        const sector_count = locBuf.readInt8(4);
+    public async readChunk(chunk_x: number, chunk_z: number) {
+        return new Promise(async (resolve) => {
+            this.in_use++;
+            if(!this.fd) {
+                this.fd = await fs.promises.open(this.region_file_path, 'r+');
+            }
+            const regLoc = this.chunkCoordsToRegLoc(chunk_x, chunk_z);
+            const locBuf = (await this.fd.read(Buffer.allocUnsafe(4),0,4,regLoc)).buffer;
+            const composed = locBuf.readInt32BE(0);
+            const chunk_offset = (composed >> 8) & 0xFFF;
+            const sector_count = composed & 0xF;
+            if(chunk_offset == 0 && sector_count == 0) {
+                resolve(null);
+                return;
+            }
+            const chunk_sector_byte_offset = chunk_offset * 4096;
+            const header_composed = (await this.fd.read(Buffer.allocUnsafe(5),0,5,chunk_sector_byte_offset)).buffer;
+            const chunk_length = header_composed.readInt32BE(0);
+            const compression = header_composed.readUInt8(4);
+            const chunk_compressed = (await this.fd.read(Buffer.allocUnsafe(chunk_length),0,chunk_length,chunk_sector_byte_offset+5)).buffer;
+            let chunk_raw;
+            switch(compression) {
+                case 0: {
+                    chunk_raw = chunk_compressed;
+                    break;
+                }
+                case 1: {
+                    chunk_raw = await gunzip(chunk_compressed);
+                    break;
+                }
+                case 2: {
+                    chunk_raw = await zlib_unzip(chunk_compressed);
+                    break;
+                }
+                default: {
+                    throw new Error("Unknown compression used!");
+                }
+            }
+            const chunk_nbt = parseTag(chunk_raw);
+            console.log(chunk_nbt);
+            resolve(chunk_nbt);
+            this.in_use--;
+            if(this.in_use <= 0) {
+                this.fd.close();
+            }
+        }) as Promise<NBT_Tag | null>;
     }
 }
