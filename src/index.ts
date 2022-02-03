@@ -1,16 +1,7 @@
 import net from "net";
 import Connection from "./connection";
+import { Server } from "./structures/Server";
 
 const port = 25565;
 
-let server: net.Server;
-
-async function onConnect(socket: net.Socket) {
-    const connection = new Connection(socket);
-}
-
-server = net.createServer(onConnect);
-
-server.listen(port, () => {
-    console.log("Server started on port", port);
-});
+const server = new Server(port);

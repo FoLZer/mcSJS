@@ -1,18 +1,4 @@
-export enum NBT_Tag_types {
-    TAG_End,
-    TAG_Byte,
-    TAG_Short,
-    TAG_Int,
-    TAG_Long,
-    TAG_Float,
-    TAG_Double,
-    TAG_Byte_Array,
-    TAG_String,
-    TAG_List,
-    TAG_Compound,
-    TAG_Int_Array,
-    TAG_Long_Array
-}
+import { NBT_Tag_type } from "./Enums";
 
 export class NBT_Tag {
     name: string;
@@ -218,9 +204,9 @@ export class NBT_Tag_String extends NBT_Tag {
 
 export class NBT_Tag_List extends NBT_Tag {
     name: string;
-    type_id: NBT_Tag_types;
+    type_id: NBT_Tag_type;
     payload: NBT_Tag[];
-    constructor(name: string, type_id: NBT_Tag_types, payload: NBT_Tag[]) {
+    constructor(name: string, type_id: NBT_Tag_type, payload: NBT_Tag[]) {
         super();
         this.name = name;
         this.payload = payload;
@@ -274,7 +260,7 @@ export class NBT_Tag_Compound extends NBT_Tag {
             b.copy(buf, 1+2+Buffer.byteLength(this.name)+s);
             s += 1+2+n_l+tag.getByteSize();
         }
-        buf.writeUInt8(NBT_Tag_types.TAG_End, 1+2+Buffer.byteLength(this.name)+s);
+        buf.writeUInt8(NBT_Tag_type.TAG_End, 1+2+Buffer.byteLength(this.name)+s);
         return buf;
     }
 
@@ -343,36 +329,36 @@ function getPayloadSize(data: Buffer) {
     const id = data.readUInt8(0);
     const name_length = data.readUInt16BE(1);
     switch(id) {
-        case NBT_Tag_types.TAG_Byte: {
+        case NBT_Tag_type.TAG_Byte: {
             return 1;
         }
-        case NBT_Tag_types.TAG_Short: {
+        case NBT_Tag_type.TAG_Short: {
             return 2;
         }
-        case NBT_Tag_types.TAG_Int: {
+        case NBT_Tag_type.TAG_Int: {
             return 4;
         }
-        case NBT_Tag_types.TAG_Long: {
+        case NBT_Tag_type.TAG_Long: {
             return 8;
         }
-        case NBT_Tag_types.TAG_Float: {
+        case NBT_Tag_type.TAG_Float: {
             return 4;
         }
-        case NBT_Tag_types.TAG_Double: {
+        case NBT_Tag_type.TAG_Double: {
             return 8;
         }
-        case NBT_Tag_types.TAG_Byte_Array: {
+        case NBT_Tag_type.TAG_Byte_Array: {
             const array_size = data.readInt32BE(1+2+name_length);
             return 4+array_size;
         }
-        case NBT_Tag_types.TAG_String: {
+        case NBT_Tag_type.TAG_String: {
             const string_length = data.readUInt16BE(1+2+name_length);
             return 2+string_length;
         }
-        case NBT_Tag_types.TAG_List: {
+        case NBT_Tag_type.TAG_List: {
             const type_id = data.readUInt8(1+2+name_length);
             const list_size = data.readInt32BE(1+2+name_length+1);
-            if(type_id == NBT_Tag_types.TAG_End) {
+            if(type_id == NBT_Tag_type.TAG_End) {
                 return 5;
             }
             let result = 0;
@@ -385,22 +371,22 @@ function getPayloadSize(data: Buffer) {
             }
             return 5+result;
         }
-        case NBT_Tag_types.TAG_Compound: {
+        case NBT_Tag_type.TAG_Compound: {
             let r = 0;
             while(true) {
                 const tag_id = data.readUInt8(1+2+name_length+r);
-                if(tag_id == NBT_Tag_types.TAG_End) {
+                if(tag_id == NBT_Tag_type.TAG_End) {
                     return r+1;
                 }
                 const name_length_1 = data.readUInt16BE(1+2+name_length+1+r);
                 r += getPayloadSize(data.slice(1+2+name_length+r))+1+2+name_length_1;
             }
         }
-        case NBT_Tag_types.TAG_Int_Array: {
+        case NBT_Tag_type.TAG_Int_Array: {
             const array_size = data.readInt32BE(1+2+name_length);
             return 4+array_size*4;
         }
-        case NBT_Tag_types.TAG_Long_Array: {
+        case NBT_Tag_type.TAG_Long_Array: {
             const array_size = data.readInt32BE(1+2+name_length);
             return 4+array_size*8;
         }
@@ -418,31 +404,31 @@ export function parseTag(data: Buffer): NBT_Tag {
         name += String.fromCharCode(data.readUInt8(3+i));
     }
     switch(id) {
-        case NBT_Tag_types.TAG_Byte: {
+        case NBT_Tag_type.TAG_Byte: {
             const payload = data.readUInt8(1+2+name_length);
             return new NBT_Tag_Byte(name, payload);
         }
-        case NBT_Tag_types.TAG_Short: {
+        case NBT_Tag_type.TAG_Short: {
             const payload = data.readInt16BE(1+2+name_length);
             return new NBT_Tag_Short(name, payload);
         }
-        case NBT_Tag_types.TAG_Int: {
+        case NBT_Tag_type.TAG_Int: {
             const payload = data.readInt32BE(1+2+name_length);
             return new NBT_Tag_Int(name, payload);
         }
-        case NBT_Tag_types.TAG_Long: {
+        case NBT_Tag_type.TAG_Long: {
             const payload = data.readBigInt64BE(1+2+name_length);
             return new NBT_Tag_Long(name, payload);
         }
-        case NBT_Tag_types.TAG_Float: {
+        case NBT_Tag_type.TAG_Float: {
             const payload = data.readFloatBE(1+2+name_length);
             return new NBT_Tag_Float(name, payload);
         }
-        case NBT_Tag_types.TAG_Double: {
+        case NBT_Tag_type.TAG_Double: {
             const payload = data.readDoubleBE(1+2+name_length);
             return new NBT_Tag_Double(name, payload);
         }
-        case NBT_Tag_types.TAG_Byte_Array: {
+        case NBT_Tag_type.TAG_Byte_Array: {
             const array_size = data.readInt32BE(1+2+name_length);
             const array = [];
             for(let i=0;i<array_size;i++) {
@@ -450,16 +436,16 @@ export function parseTag(data: Buffer): NBT_Tag {
             }
             return new NBT_Tag_Byte_Array(name, array);
         }
-        case NBT_Tag_types.TAG_String: {
+        case NBT_Tag_type.TAG_String: {
             const string_length = data.readUInt16BE(1+2+name_length);
             const string = data.slice(1+2+name_length+2, 1+2+name_length+2+string_length).toString("utf-8");
             return new NBT_Tag_String(name, string);
         }
-        case NBT_Tag_types.TAG_List: {
+        case NBT_Tag_type.TAG_List: {
             const type_id = data.readUInt8(1+2+name_length);
             const list_size = data.readInt32BE(1+2+name_length+1);
             const payload: NBT_Tag[] = [];
-            if(type_id == NBT_Tag_types.TAG_End) {
+            if(type_id == NBT_Tag_type.TAG_End) {
                 return new NBT_Tag_List(name, type_id, payload);
             }
             let s = 0;
@@ -473,12 +459,12 @@ export function parseTag(data: Buffer): NBT_Tag {
             }
             return new NBT_Tag_List(name, type_id, payload);
         }
-        case NBT_Tag_types.TAG_Compound: {
+        case NBT_Tag_type.TAG_Compound: {
             const payload = [];
             let r = 0;
             while(true) {
                 const tag_id = data.readUInt8(1+2+name_length+r);
-                if(tag_id == NBT_Tag_types.TAG_End) {
+                if(tag_id == NBT_Tag_type.TAG_End) {
                     return new NBT_Tag_Compound(name, payload);
                 }
                 payload.push(parseTag(data.slice(1+2+name_length+r)));
@@ -486,7 +472,7 @@ export function parseTag(data: Buffer): NBT_Tag {
                 r += getPayloadSize(data.slice(1+2+name_length+r))+1+2+name_length_1;
             }
         }
-        case NBT_Tag_types.TAG_Int_Array: {
+        case NBT_Tag_type.TAG_Int_Array: {
             const array_size = data.readInt32BE(1+2+name_length);
             const array = [];
             for(let i=0;i<array_size;i++) {
@@ -494,7 +480,7 @@ export function parseTag(data: Buffer): NBT_Tag {
             }
             return new NBT_Tag_Int_Array(name, array);
         }
-        case NBT_Tag_types.TAG_Long_Array: {
+        case NBT_Tag_type.TAG_Long_Array: {
             const array_size = data.readInt32BE(1+2+name_length);
             const array = [];
             for(let i=0;i<array_size;i++) {

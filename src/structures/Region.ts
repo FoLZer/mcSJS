@@ -1,9 +1,10 @@
-import { decompressXZ, Dimensions } from "./World";
+import { decompressXZ } from "./World";
 import path from "path";
 import fs from "fs";
 import { promisify } from "util";
 import zlib from "zlib";
 import { NBT_Tag, parseTag } from "../NBT";
+import { Dimensions } from "../Enums";
 const gunzip = promisify(zlib.gunzip);
 const zlib_unzip = promisify(zlib.unzip);
 
@@ -29,6 +30,9 @@ export class Region {
             }
         }
         this.in_use = 0;
+        try {
+            fs.writeFileSync(this.region_file_path,"",{"flag":'wx'});
+        } catch(e) {}
     }
 
     public static chunkCoordsToRegion(chunk_x: number, chunk_z: number) {

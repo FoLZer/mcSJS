@@ -4,9 +4,9 @@ import https from "https";
 import { v3 as v3uuid } from "uuid";
 import BufferAccess from "./buffer/BufferAccess";
 import { packets, ClientPacket, ServerPacket } from "./packets";
-import { NBT_Tag_Byte, NBT_Tag_Compound, NBT_Tag_Double, NBT_Tag_Float, NBT_Tag_Int, NBT_Tag_List, NBT_Tag_Long, NBT_Tag_Long_Array, NBT_Tag_String, NBT_Tag_types } from "./NBT";
-import commands from "./commands_graph";
-import tags from "./tags";
+import { NBT_Tag_Byte, NBT_Tag_Compound, NBT_Tag_Double, NBT_Tag_Float, NBT_Tag_Int, NBT_Tag_List, NBT_Tag_Long, NBT_Tag_Long_Array, NBT_Tag_String } from "./NBT";
+import EventEmitter from "events";
+import { ConnectionState, NBT_Tag_type } from "./Enums";
 
 const key_pair = crypto.generateKeyPairSync("rsa" as any, {
     modulusLength: 1024,
@@ -15,14 +15,6 @@ const key_pair = crypto.generateKeyPairSync("rsa" as any, {
         format: "der"
     }
 });
-
-
-enum ConnectionState {
-    Handshake,
-    Status,
-    Login,
-    Play
-}
 
 function mcHexDigest(str: string) {
     let hash = Buffer.from(crypto.createHash('sha1').update(str).digest());
@@ -54,7 +46,7 @@ function performTwosCompliment(buffer: Buffer) {
 const dimension_codec = new NBT_Tag_Compound("", [
     new NBT_Tag_Compound("minecraft:dimension_type", [
         new NBT_Tag_String("type", "minecraft:dimension_type"),
-        new NBT_Tag_List("value", NBT_Tag_types.TAG_Compound, [
+        new NBT_Tag_List("value", NBT_Tag_type.TAG_Compound, [
             new NBT_Tag_Compound("", [
                 new NBT_Tag_String("name", "minecraft:overworld"),
                 new NBT_Tag_Int("id", 0),
@@ -145,7 +137,7 @@ const dimension_codec = new NBT_Tag_Compound("", [
     ]),
     new NBT_Tag_Compound("minecraft:worldgen/biome", [
         new NBT_Tag_String("type", "minecraft:worldgen/biome"),
-        new NBT_Tag_List("value", NBT_Tag_types.TAG_Compound, [
+        new NBT_Tag_List("value", NBT_Tag_type.TAG_Compound, [
             new NBT_Tag_Compound("", [
                 new NBT_Tag_String("name", "minecraft:overworld"),
                 new NBT_Tag_Int("id", 0),
@@ -174,7 +166,7 @@ const dimension_codec = new NBT_Tag_Compound("", [
     ])
 ])
 
-export default class Connection {
+export default class Connection extends EventEmitter {
     socket: net.Socket;
     state;
     username?: string;
@@ -189,6 +181,7 @@ export default class Connection {
     }
 
     constructor(socket: net.Socket) {
+        super();
         this.socket = socket;
         this.state = ConnectionState.Handshake;
 
@@ -306,63 +299,18 @@ export default class Connection {
                         if(!this.username) {
                             throw new Error("No username was found during login start!");
                         }
-                        this.sendPacket(new packets.Server.Login[2](v3uuid(this.username, "d8238f96-d2e9-472e-bfca-78f34fa44e9f"), this.username))
-                        this.sendPacket(new packets.Server.Play[38](0,false,0,-1,["minecraft:overworld"],dimension_codec,(((dimension_codec.payload[0] as NBT_Tag_Compound).payload[1] as NBT_Tag_List).payload[0] as NBT_Tag_Compound).payload[2] as NBT_Tag_Compound,"minecraft:overworld",0n,100,3,3,false,true,false,false));
-                        this.sendPacket(new packets.Server.Play[24]("minecraft:brand",Buffer.from("mcSJS") as any));
-                        this.sendPacket(new packets.Server.Play[14](0,true));
-                        this.sendPacket(new packets.Server.Play[50](false, false, false, false, 0.05, 0.1));
-                        //skip packet 0x05, huh?
-                        this.sendPacket(new packets.Server.Play[72](0));
-                        //this.sendPacket(new packets.Server.Play[102]([]));
-                        //this.sendPacket(new packets.Server.Play[103](tags));
-                        //this.sendPacket(new packets.Server.Play[27](0,24));
-                        //this.sendPacket(new packets.Server.Play[18](commands,0));
-                        //this.sendPacket(new packets.Server.Play[57](0,false,false,false,false,false,false,false,false,[],[]));
-                        this.sendPacket(new packets.Server.Play[56](0,1,0,0,0,0,0,true));
-                        this.sendPacket(new packets.Server.Play[54](0,[
-                            {
-                                uuid: "",
-                                name: "",
-                                properties: [],
-                                gamemode: 0,
-                                ping: -1,
-                                has_display_name: false
-                            }
-                        ]));
-                        this.sendPacket(new packets.Server.Play[54](0,[
-                            {
-                                uuid: "",
-                                name: "",
-                                properties: [],
-                                gamemode: 0,
-                                ping: -1,
-                                has_display_name: false
-                            }
-                        ]));
-                        this.sendPacket(new packets.Server.Play[73](0,0));
-                        this.sendPacket(new packets.Server.Play[34](
-                            0,
-                            0,
-                            new NBT_Tag_Compound("",[
-                                new NBT_Tag_Long_Array("MOTION_BLOCKING",new Array(36).fill([0,0]))
-                            ]),
-                            [],
-                            [],
-                            true,
-                            [],
-                            [],
-                            [],
-                            [],
-                            [],
-                            []
-                            ));
+                        this.sendPacket(new packets.Server.Login[2](v3uuid(this.username, "d8238f96-d2e9-472e-bfca-78f34fa44e9f"), this.username));
+                        this.emit("login_done");
                         break;
+                        /*
                         const verify_token = Buffer.alloc(4);
                         verify_token.writeUInt32LE(Math.random() * 4294967295);
                         this.sendPacket(new packets.Server.Login[1]("", key_pair.publicKey as unknown as Buffer, verify_token));
+                        */
                         break;
                     }
                     case 1: {
+                        /*
                         if(!this.username) {
                             throw new Error("No username was found during login encryption!");
                         }
@@ -380,11 +328,67 @@ export default class Connection {
                                 this.state = ConnectionState.Play;
                             });
                         });
+                        */
                         break;
                     }
                 }
                 break;
             }
         }
+    }
+
+    public sendJoinGame() {
+        this.sendPacket(new packets.Server.Play[38](
+            0,false,0,-1,["minecraft:overworld"],dimension_codec,
+            (((dimension_codec.payload[0] as NBT_Tag_Compound).payload[1] as NBT_Tag_List).payload[0] as NBT_Tag_Compound).payload[2] as NBT_Tag_Compound,
+            "minecraft:overworld",0n,100,3,3,false,true,false,false
+        ));
+    }
+
+    public sendServerBrand() {
+        this.sendPacket(new packets.Server.Play[24]("minecraft:brand",Buffer.from("mcSJS") as any));
+    }
+
+    public sendDifficulty() {
+        this.sendPacket(new packets.Server.Play[14](0,true));
+    }
+
+    public sendPlayerAbilities() {
+        this.sendPacket(new packets.Server.Play[50](false, false, false, false, 0.05, 0.1));
+    }
+
+    public sendChangeSlot() {
+        this.sendPacket(new packets.Server.Play[72](0));
+    }
+
+    public sendPlayerPosAndLook() {
+        this.sendPacket(new packets.Server.Play[56](0,1,0,0,0,0,0,true));
+    }
+
+    public sendPlayerInfo() {
+        this.sendPacket(new packets.Server.Play[54](0,[
+            {
+                uuid: "",
+                name: "",
+                properties: [],
+                gamemode: 0,
+                ping: -1,
+                has_display_name: false
+            }
+        ]));
+    }
+
+    public updateViewPosition() {
+        this.sendPacket(new packets.Server.Play[73](0,0));
+    }
+
+    public sendChunkDataAndLight() {
+        this.sendPacket(new packets.Server.Play[34](
+            0,0,
+            new NBT_Tag_Compound("",[
+                new NBT_Tag_Long_Array("MOTION_BLOCKING",new Array(36).fill([0,0]))
+            ]),
+            [],[],true,[],[],[],[],[],[]
+        ));
     }
 }

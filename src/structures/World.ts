@@ -1,12 +1,7 @@
 import { Chunk } from "./Chunk";
 import { Region } from "./Region";
 import path from "path";
-
-export enum Dimensions {
-    Overworld = "minecraft:overworld",
-    Nether = "minecraft:the_nether",
-    The_End = "minecraft:the_end"
-}
+import { Dimensions } from "../Enums";
 
 export function compressXZ(x: number, z: number) {
     x = x & 4294967295; //int32
@@ -22,7 +17,7 @@ export function decompressXZ(xz: string) {
     return arr.map((v) => Number(v));
 }
 
-class World {
+export class World {
     private world_name: string;
     private dim: Dimensions;
     private chunks: {[chunk_xz: string]: Chunk};
