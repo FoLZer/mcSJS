@@ -1,6 +1,7 @@
 import BufferAccess from "./buffer/BufferAccess";
 import UUID from "uuid-1345";
-import { NBT_Tag_Compound } from "./NBT";
+import { NBT_Tag, NBT_Tag_Compound } from "./NBT";
+import { CommandNode } from "./commands_graph";
 
 class Packet {}
 
@@ -240,26 +241,10 @@ const packets = {
                 }
             },
             18: class DeclareCommands extends ServerPacket {
-                nodes: {
-                    flags: number,
-                    children: number[],
-                    redirect_node?: number,
-                    name?: string,
-                    parser?: string,
-                    properties?: number,
-                    suggestions_type?: string
-                }[]
+                nodes: CommandNode[]
                 root_index: number
 
-                constructor(nodes: {
-                    flags: number,
-                    children: number[],
-                    redirect_node?: number,
-                    name?: string,
-                    parser?: string,
-                    properties?: any,
-                    suggestions_type?: string
-                }[], root_index: number) {
+                constructor(nodes: CommandNode[], root_index: number) {
                     super(18);
                     this.nodes = nodes;
                     this.root_index = root_index;
@@ -355,6 +340,108 @@ const packets = {
                     const bufAcc = new BufferAccess(buf);
                     bufAcc.writeInt32(this.entity_id);
                     bufAcc.writeInt8(this.entity_status);
+                    return buf;
+                }
+            },
+            34: class ChunkDataAndUpdateLight extends ServerPacket {
+                chunk_x: number;
+                chunk_z: number;
+                heightmaps: NBT_Tag_Compound;
+                data: number[];
+                block_entity_ar: {
+                    xz: number;
+                    y: number;
+                    type: number;
+                    data: NBT_Tag;
+                }[];
+                trust_edges: boolean;
+                sky_light_mask: bigint[];
+                block_light_mask: bigint[];
+                empty_sky_light_mask: bigint[];
+                empty_block_light_mask: bigint[];
+                sky_light_arrays: number[][];
+                block_light_arrays: number[][];
+
+                constructor(chunk_x: number,chunk_z: number,heightmaps: NBT_Tag_Compound,data: number[],block_entity_ar: {
+                    xz: number;
+                    y: number;
+                    type: number;
+                    data: NBT_Tag;
+                }[],trust_edges: boolean,sky_light_mask: bigint[],block_light_mask: bigint[],empty_sky_light_mask: bigint[],empty_block_light_mask: bigint[],sky_light_arrays: number[][],block_light_arrays: number[][]) {
+                    super(34);
+                    this.chunk_x = chunk_x;
+                    this.chunk_z = chunk_z;
+                    this.heightmaps = heightmaps;
+                    this.data = data;
+                    this.block_entity_ar = block_entity_ar;
+                    this.trust_edges = trust_edges;
+                    this.sky_light_mask = sky_light_mask;
+                    this.block_light_mask = block_light_mask;
+                    this.empty_sky_light_mask = empty_sky_light_mask;
+                    this.empty_block_light_mask = empty_block_light_mask;
+                    this.sky_light_arrays = sky_light_arrays;
+                    this.block_light_arrays = block_light_arrays;
+                }
+
+                public Serealize(): Buffer {
+                    const heightmap_buf = this.heightmaps.toBuffer();
+                    let size = 4+4+heightmap_buf.byteLength+BufferAccess.getVarIntLength(this.data.length)+this.data.length+BufferAccess.getVarIntLength(this.block_entity_ar.length);
+                    for(const block_entity of this.block_entity_ar) {
+                        size += 1+2+BufferAccess.getVarIntLength(block_entity.type)+block_entity.data.toBuffer().byteLength;
+                    }
+                    size += 1+BufferAccess.getVarIntLength(this.sky_light_mask.length)+this.sky_light_mask.length*8;
+                    size += BufferAccess.getVarIntLength(this.block_light_mask.length)+this.block_light_mask.length*8;
+                    size += BufferAccess.getVarIntLength(this.empty_sky_light_mask.length)+this.empty_sky_light_mask.length*8;
+                    size += BufferAccess.getVarIntLength(this.empty_block_light_mask.length)+this.empty_block_light_mask.length*8;
+                    size += BufferAccess.getVarIntLength(this.sky_light_arrays.length);
+                    for(const sky_light_array of this.sky_light_arrays) {
+                        size += BufferAccess.getVarIntLength(sky_light_array.length);
+                        size += sky_light_array.length; //always should be 2048
+                    }
+                    size += BufferAccess.getVarIntLength(this.block_light_arrays.length);
+                    for(const block_light_array of this.block_light_arrays) {
+                        size += BufferAccess.getVarIntLength(block_light_array.length);
+                        size += block_light_array.length; //always should be 2048
+                    }
+                    const buf = Buffer.allocUnsafe(size);
+                    const bufAcc = new BufferAccess(buf);
+                    bufAcc.writeInt32(this.chunk_x);
+                    bufAcc.writeInt32(this.chunk_z);
+                    bufAcc.writeBuf(heightmap_buf);
+                    bufAcc.writeVarInt(this.block_entity_ar.length);
+                    for(const block_entity of this.block_entity_ar) {
+                        bufAcc.writeInt8(block_entity.xz);
+                        bufAcc.writeInt16(block_entity.y);
+                        bufAcc.writeVarInt(block_entity.type);
+                        bufAcc.writeBuf(block_entity.data.toBuffer());
+                    }
+                    bufAcc.writeBoolean(this.trust_edges);
+                    bufAcc.writeVarInt(this.sky_light_mask.length);
+                    for(let i=0;i<this.sky_light_mask.length;i++) {
+                        bufAcc.writeInt64(this.sky_light_mask[i]);
+                    }
+                    bufAcc.writeVarInt(this.block_light_mask.length);
+                    for(let i=0;i<this.block_light_mask.length;i++) {
+                        bufAcc.writeInt64(this.block_light_mask[i]);
+                    }
+                    bufAcc.writeVarInt(this.empty_sky_light_mask.length);
+                    for(let i=0;i<this.empty_sky_light_mask.length;i++) {
+                        bufAcc.writeInt64(this.empty_sky_light_mask[i]);
+                    }
+                    bufAcc.writeVarInt(this.empty_block_light_mask.length);
+                    for(let i=0;i<this.empty_block_light_mask.length;i++) {
+                        bufAcc.writeInt64(this.empty_block_light_mask[i]);
+                    }
+                    bufAcc.writeVarInt(this.sky_light_arrays.length);
+                    for(const sky_light_array of this.sky_light_arrays) {
+                        bufAcc.writeVarInt(sky_light_array.length);
+                        bufAcc.writeBytes(sky_light_array);
+                    }
+                    bufAcc.writeVarInt(this.block_light_arrays.length);
+                    for(const block_light_array of this.block_light_arrays) {
+                        bufAcc.writeVarInt(block_light_array.length);
+                        bufAcc.writeBytes(block_light_array);
+                    }
                     return buf;
                 }
             },

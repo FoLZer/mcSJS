@@ -5,6 +5,8 @@ import { v3 as v3uuid } from "uuid";
 import BufferAccess from "./buffer/BufferAccess";
 import { packets, ClientPacket, ServerPacket } from "./packets";
 import { NBT_Tag_Byte, NBT_Tag_Compound, NBT_Tag_Double, NBT_Tag_Float, NBT_Tag_Int, NBT_Tag_List, NBT_Tag_Long, NBT_Tag_String, NBT_Tag_types } from "./NBT";
+import commands from "./commands_graph";
+import tags from "./tags";
 
 const key_pair = crypto.generateKeyPairSync("rsa" as any, {
     modulusLength: 1024,
@@ -199,7 +201,7 @@ export default class Connection {
         let cur_packet_length = -1;
 
         const readPacket = (buf: Buffer): ClientPacket => {
-            console.log(buf);
+            console.log("read_packet", buf);
             const bufAcc = new BufferAccess(buf);
             bufAcc.readVarInt(); //length
             const c_l = bufAcc.getPos();
@@ -260,6 +262,7 @@ export default class Connection {
         bufAcc.writeVarInt(packet.getId());
         bufAcc.writeBuf(data);
         if(this.socket.writable) {
+            console.log("write_packet", buf);
             this.socket.write(buf);
         }
     }
@@ -311,15 +314,9 @@ export default class Connection {
                         //skip packet 0x05, huh?
                         this.sendPacket(new packets.Server.Play[72](0));
                         this.sendPacket(new packets.Server.Play[102]([]));
-                        this.sendPacket(new packets.Server.Play[103]([
-                            {tag_type:"minecraft:block",tag_ar:[]},
-                            {tag_type:"minecraft:item",tag_ar:[]},
-                            {tag_type:"minecraft:fluid",tag_ar:[]},
-                            {tag_type:"minecraft:entity_type",tag_ar:[]},
-                            {tag_type:"minecraft:game_event",tag_ar:[]}
-                        ]));
+                        this.sendPacket(new packets.Server.Play[103](tags));
                         this.sendPacket(new packets.Server.Play[27](0,24));
-                        this.sendPacket(new packets.Server.Play[18]([],0));
+                        this.sendPacket(new packets.Server.Play[18](commands,0));
                         this.sendPacket(new packets.Server.Play[57](0,false,false,false,false,false,false,false,false,[],[]));
                         this.sendPacket(new packets.Server.Play[56](0,1,0,0,0,0,0,true));
                         this.sendPacket(new packets.Server.Play[54](0,[
