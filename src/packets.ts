@@ -2,6 +2,7 @@ import BufferAccess from "./buffer/BufferAccess";
 import UUID from "uuid-1345";
 import { NBT_Tag, NBT_Tag_Compound } from "./NBT";
 import { CommandNode } from "./commands_graph";
+import { Difficulty } from "./Enums";
 
 class Packet {}
 
@@ -223,10 +224,10 @@ const packets = {
         },
         Play: {
             14: class ServerDifficulty extends ServerPacket {
-                difficulty: number;
+                difficulty: Difficulty;
                 difficulty_locked: boolean;
 
-                constructor(difficulty: number, difficulty_locked: boolean) {
+                constructor(difficulty: Difficulty, difficulty_locked: boolean) {
                     super(14);
                     this.difficulty = difficulty;
                     this.difficulty_locked = difficulty_locked;

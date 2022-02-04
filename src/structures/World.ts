@@ -38,7 +38,7 @@ export class World {
         if(this.regions[region_xz]) {
             return;
         }
-        this.regions[region_xz] = new Region(path.resolve("..",this.world_name),this.dim,region_xz);
+        this.regions[region_xz] = new Region(path.resolve('.',this.world_name),this.dim,region_xz);
     }
 
     private loadRegion(region_x: number, region_z: number) {
@@ -46,7 +46,7 @@ export class World {
         return this.loadRegion_xz(compresed_region_xz);
     }
 
-    private async loadChunk(chunk_x: number, chunk_z: number) {
+    public async loadChunk(chunk_x: number, chunk_z: number) {
         const compressed_xz = compressXZ(chunk_x,chunk_z);
         if(this.chunks[compressed_xz]) {
             return;
@@ -58,6 +58,7 @@ export class World {
         }
         const region = this.regions[compresed_region_xz];
         const chunk = await region.readChunk(chunk_x,chunk_z);
+        console.log(chunk);
         if(!chunk) {
             this.chunks[compressed_xz] = this.generateChunk(chunk_x, chunk_z);
         }

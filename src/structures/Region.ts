@@ -17,15 +17,15 @@ export class Region {
         const [region_x,region_z] = decompressXZ(region_xz);
         switch(dimension) {
             case Dimensions.Overworld: {
-                this.region_file_path = path.resolve(world_path,"region",`r${region_x}.${region_z}.mca`);
+                this.region_file_path = path.resolve(world_path,"region",`r.${region_x}.${region_z}.mca`);
                 break;
             }
             case Dimensions.Nether: {
-                this.region_file_path = path.resolve(world_path,"DIM-1","region",`r${region_x}.${region_z}.mca`);
+                this.region_file_path = path.resolve(world_path,"DIM-1","region",`r.${region_x}.${region_z}.mca`);
                 break;
             }
             case Dimensions.The_End: {
-                this.region_file_path = path.resolve(world_path,"DIM1","region",`r${region_x}.${region_z}.mca`);
+                this.region_file_path = path.resolve(world_path,"DIM1","region",`r.${region_x}.${region_z}.mca`);
                 break;
             }
         }

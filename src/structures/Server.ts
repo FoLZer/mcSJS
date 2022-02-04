@@ -43,14 +43,14 @@ export class Server {
         connection.once("login_done", () => {
             connection.sendJoinGame();
             connection.sendServerBrand();
-            connection.sendDifficulty();
+            connection.sendDifficulty(this.difficulty);
             connection.sendPlayerAbilities();
-            connection.sendChangeSlot();
+            connection.sendChangeSlotSelection(0);
             connection.sendPlayerPosAndLook();
-            connection.sendPlayerInfo();
-            connection.sendPlayerInfo();
+            connection.addPlayerToTab(player);
+            connection.addPlayerToTab(player);
             connection.updateViewPosition();
-            connection.sendChunkDataAndLight();
+            connection.sendChunkDataAndLight(this.worlds[0].getChunkAt(0,0));
         });
     }
 }

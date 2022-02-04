@@ -1,12 +1,13 @@
 import net from "net";
 import crypto from "crypto";
-import https from "https";
 import { v3 as v3uuid } from "uuid";
 import BufferAccess from "./buffer/BufferAccess";
 import { packets, ClientPacket, ServerPacket } from "./packets";
 import { NBT_Tag_Byte, NBT_Tag_Compound, NBT_Tag_Double, NBT_Tag_Float, NBT_Tag_Int, NBT_Tag_List, NBT_Tag_Long, NBT_Tag_Long_Array, NBT_Tag_String } from "./NBT";
 import EventEmitter from "events";
-import { ConnectionState, NBT_Tag_type } from "./Enums";
+import { ConnectionState, Difficulty, NBT_Tag_type } from "./Enums";
+import { Player } from "./structures/Player";
+import { Chunk } from "./structures/Chunk";
 
 const key_pair = crypto.generateKeyPairSync("rsa" as any, {
     modulusLength: 1024,
@@ -299,8 +300,9 @@ export default class Connection extends EventEmitter {
                         if(!this.username) {
                             throw new Error("No username was found during login start!");
                         }
-                        this.sendPacket(new packets.Server.Login[2](v3uuid(this.username, "d8238f96-d2e9-472e-bfca-78f34fa44e9f"), this.username));
-                        this.emit("login_done");
+                        const uuid = v3uuid(this.username, "d8238f96-d2e9-472e-bfca-78f34fa44e9f")
+                        this.sendPacket(new packets.Server.Login[2](uuid, this.username));
+                        this.emit("login_done", this.username, uuid);
                         break;
                         /*
                         const verify_token = Buffer.alloc(4);
@@ -349,31 +351,44 @@ export default class Connection extends EventEmitter {
         this.sendPacket(new packets.Server.Play[24]("minecraft:brand",Buffer.from("mcSJS") as any));
     }
 
-    public sendDifficulty() {
-        this.sendPacket(new packets.Server.Play[14](0,true));
+    public sendDifficulty(difficulty: Difficulty) {
+        this.sendPacket(new packets.Server.Play[14](difficulty,true));
     }
 
     public sendPlayerAbilities() {
         this.sendPacket(new packets.Server.Play[50](false, false, false, false, 0.05, 0.1));
     }
 
-    public sendChangeSlot() {
-        this.sendPacket(new packets.Server.Play[72](0));
+    public sendChangeSlotSelection(slot: number) {
+        if(slot < 0 || slot > 8) {
+            throw new Error("Slot is out of range");
+        }
+        slot = Math.round(slot);
+        this.sendPacket(new packets.Server.Play[72](slot));
     }
 
     public sendPlayerPosAndLook() {
         this.sendPacket(new packets.Server.Play[56](0,1,0,0,0,0,0,true));
     }
 
-    public sendPlayerInfo() {
+    public addPlayerToTab(player: Player) {
         this.sendPacket(new packets.Server.Play[54](0,[
             {
-                uuid: "",
-                name: "",
+                uuid: player.getUUID(),
+                name: player.getName(),
                 properties: [],
-                gamemode: 0,
+                gamemode: player.getGamemode(),
                 ping: -1,
-                has_display_name: false
+                has_display_name: !!player.getDisplayName(),
+                display_name: player.getDisplayName()
+            }
+        ]));
+    }
+
+    public removePlayerFromTab(player: Player) {
+        this.sendPacket(new packets.Server.Play[54](4,[
+            {
+                uuid: player.getUUID(),
             }
         ]));
     }
@@ -382,12 +397,10 @@ export default class Connection extends EventEmitter {
         this.sendPacket(new packets.Server.Play[73](0,0));
     }
 
-    public sendChunkDataAndLight() {
+    public sendChunkDataAndLight(chunk: Chunk) {
         this.sendPacket(new packets.Server.Play[34](
             0,0,
-            new NBT_Tag_Compound("",[
-                new NBT_Tag_Long_Array("MOTION_BLOCKING",new Array(36).fill([0,0]))
-            ]),
+            chunk.getHeightmap(),
             [],[],true,[],[],[],[],[],[]
         ));
     }

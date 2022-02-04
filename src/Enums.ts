@@ -5,6 +5,13 @@ export enum Difficulty {
     Hard
 }
 
+export enum Gamemode {
+    Survival,
+    Creative,
+    Adventure,
+    Spectator
+}
+
 export enum ConnectionState {
     Handshake,
     Status,
@@ -82,7 +89,7 @@ export enum NBT_Tag_type {
 }
 
 export enum Dimensions {
-    Overworld = "minecraft:overworld",
-    Nether = "minecraft:the_nether",
-    The_End = "minecraft:the_end"
+    Overworld,
+    Nether,
+    The_End
 }
