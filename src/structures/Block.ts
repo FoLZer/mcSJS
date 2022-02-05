@@ -1,8 +1,10 @@
 export class Block {
     private id: string;
+    private properties: {[property: string]: any}
 
-    constructor(id: string) {
+    constructor(id: string, properties: {[property: string]: any}) {
         this.id = id;
+        this.properties = properties;
     }
 
     public getNumId() {

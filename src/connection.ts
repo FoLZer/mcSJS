@@ -405,7 +405,7 @@ export default class Connection extends EventEmitter {
         this.sendPacket(new packets.Server.Play[34](
             0,0,
             chunk.getHeightmap(),
-            [],[],true,[],[],[],[],[],[]
+            chunk.getChunkData(),[],true,[],[],[],[],[],[]
         ));
     }
 }

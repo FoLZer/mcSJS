@@ -1,4 +1,6 @@
+import BufferAccess from "../buffer/BufferAccess";
 import { NBT_Tag_Compound, NBT_Tag_Long_Array } from "../NBT";
+import { IndirectPalette } from "../Palette";
 import { compressXYZ } from "../Util";
 import { Block } from "./Block";
 
@@ -25,13 +27,32 @@ export class Chunk {
     }
 
     getChunkData() {
-        const buf = Buffer.alloc(2)
-        let num_non_air = 0;
-        for(const block of this.blocks) {
-            if(block.getNumId() != 0) {
-                num_non_air++;
+        const buf = Buffer.alloc(2);
+        const bufAcc = new BufferAccess(buf);
+        for(let i = -64; i < 256; i += 16) {
+            let cur_id = 0;
+            const palette_mapping = [];
+            const uncompressed_data = [];
+            for(let i1 = 0;i1<0xFFF;i1++) {
+                const block = this.blocks[((i > 0 ? 0 : 1) << 16) | (((i > 0 ? 1 : -1)*i) << 12) | i1];
+                if(palette_mapping[block.getNumId()]) {
+                    uncompressed_data[i1] = palette_mapping[block.getNumId()];
+                } else {
+                    palette_mapping[block.getNumId()] = cur_id;
+                    uncompressed_data[i1] = cur_id;
+                    cur_id++;
+                }
             }
-        } //TODO: change to better counter
-
+            const palette = [];
+            for(const id in palette_mapping) {
+                palette[palette.length] = id;
+            }
+            const data = [];
+            const block_states = new IndirectPalette([],[]);
+            const section_index = i / 16;
+            bufAcc.writeInt16(10);
+            
+        }
+        return buf;
     }
 }

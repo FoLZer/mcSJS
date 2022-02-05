@@ -348,7 +348,7 @@ const packets = {
                 chunk_x: number;
                 chunk_z: number;
                 heightmaps: NBT_Tag_Compound;
-                data: number[];
+                data: Buffer;
                 block_entity_ar: {
                     xz: number;
                     y: number;
@@ -363,7 +363,7 @@ const packets = {
                 sky_light_arrays: number[][];
                 block_light_arrays: number[][];
 
-                constructor(chunk_x: number,chunk_z: number,heightmaps: NBT_Tag_Compound,data: number[],block_entity_ar: {
+                constructor(chunk_x: number,chunk_z: number,heightmaps: NBT_Tag_Compound,data: Buffer,block_entity_ar: {
                     xz: number;
                     y: number;
                     type: number;
@@ -386,7 +386,7 @@ const packets = {
 
                 public Serealize(): Buffer {
                     const heightmap_buf = this.heightmaps.toBuffer();
-                    let size = 4+4+heightmap_buf.byteLength+BufferAccess.getVarIntLength(this.data.length)+this.data.length+BufferAccess.getVarIntLength(this.block_entity_ar.length);
+                    let size = 4+4+heightmap_buf.byteLength+BufferAccess.getVarIntLength(this.data.byteLength)+this.data.byteLength+BufferAccess.getVarIntLength(this.block_entity_ar.length);
                     for(const block_entity of this.block_entity_ar) {
                         size += 1+2+BufferAccess.getVarIntLength(block_entity.type)+block_entity.data.toBuffer().byteLength;
                     }
@@ -409,6 +409,8 @@ const packets = {
                     bufAcc.writeInt32(this.chunk_x);
                     bufAcc.writeInt32(this.chunk_z);
                     bufAcc.writeBuf(heightmap_buf);
+                    bufAcc.writeVarInt(this.data.byteLength);
+                    bufAcc.writeBuf(this.data);
                     bufAcc.writeVarInt(this.block_entity_ar.length);
                     for(const block_entity of this.block_entity_ar) {
                         bufAcc.writeInt8(block_entity.xz);
