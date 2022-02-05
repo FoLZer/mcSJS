@@ -1,6 +1,6 @@
 import net from "net";
 import crypto from "crypto";
-import { v3 as v3uuid } from "uuid";
+import UUID from "uuid-1345"
 import BufferAccess from "./buffer/BufferAccess";
 import { packets, ClientPacket, ServerPacket } from "./packets";
 import { NBT_Tag_Byte, NBT_Tag_Compound, NBT_Tag_Double, NBT_Tag_Float, NBT_Tag_Int, NBT_Tag_List, NBT_Tag_Long, NBT_Tag_Long_Array, NBT_Tag_String } from "./NBT";
@@ -179,14 +179,29 @@ export default class Connection extends EventEmitter {
             value: string,
             signature: string
         }[]
-    }
+    };
+    connection_id: number;
 
-    constructor(socket: net.Socket) {
+    constructor(socket: net.Socket, connection_id: number) {
         super();
         this.socket = socket;
         this.state = ConnectionState.Handshake;
+        this.connection_id = connection_id;
 
         this.initiateConnection();
+    }
+
+    public getId() {
+        return this.connection_id;
+    }
+
+    private disconnect() {
+        this.socket.end();
+        this.socket.destroy();
+        this.emit("disconnect");
+        for(const event_names of this.eventNames()) {
+            this.removeAllListeners(event_names);
+        }
     }
 
     private initiateConnection() {
@@ -244,6 +259,10 @@ export default class Connection extends EventEmitter {
         this.socket.on("data", (data) => {
             readAvailablePackets(data);
         });
+
+        this.socket.on("close", () => {
+            this.disconnect();
+        })
     }
 
     private sendPacket(packet: ServerPacket) {
@@ -268,8 +287,7 @@ export default class Connection extends EventEmitter {
                     case 0: {
                         const next_state = (packet as any).next_state as number;
                         if(next_state != 1 && next_state != 2) {
-                            this.socket.end();
-                            this.socket.destroy();
+                            this.disconnect();
                             return;
                         }
                         this.state = ConnectionState[ConnectionState[next_state] as unknown as ConnectionState] as unknown as ConnectionState;
@@ -286,8 +304,7 @@ export default class Connection extends EventEmitter {
                     }
                     case 1: {
                         this.sendPacket(new packets.Server.Status[1]((packet as any).payload));
-                        this.socket.end();
-                        this.socket.destroy();
+                        this.disconnect();
                         break;
                     }
                 }
@@ -300,7 +317,7 @@ export default class Connection extends EventEmitter {
                         if(!this.username) {
                             throw new Error("No username was found during login start!");
                         }
-                        const uuid = v3uuid(this.username, "d8238f96-d2e9-472e-bfca-78f34fa44e9f")
+                        const uuid = UUID.v3({"name": this.username, "namespace": "d8238f96-d2e9-472e-bfca-78f34fa44e9f"})
                         this.sendPacket(new packets.Server.Login[2](uuid, this.username));
                         this.emit("login_done", this.username, uuid);
                         break;

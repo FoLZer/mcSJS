@@ -20,7 +20,7 @@ export class Server {
 
         this.difficulty = Difficulty.Peaceful;
 
-        this._server = net.createServer(this.onConnection);
+        this._server = net.createServer((socket: net.Socket) => {this.onConnection(socket)});
 
         this._server.listen(port, () => {
             console.log("Server started on port", port);
@@ -31,16 +31,16 @@ export class Server {
         if(!socket.remoteAddress) {
             return;
         }
-        if(this.players[socket.remoteAddress]) {
-            socket.end();
-            socket.destroy();
-            return;
-        }
-        const connection = new Connection(socket);
+        const connection_id = Object.keys(this.players).length;
+        const connection = new Connection(socket, connection_id);
         const player = new Player(connection);
         this.players[socket.remoteAddress] = player;
 
-        connection.once("login_done", () => {
+        connection.once("disconnect", async () => {
+            delete this.players[connection.getId()];
+        })
+
+        connection.once("login_done", async () => {
             connection.sendJoinGame();
             connection.sendServerBrand();
             connection.sendDifficulty(this.difficulty);
@@ -50,7 +50,12 @@ export class Server {
             connection.addPlayerToTab(player);
             connection.addPlayerToTab(player);
             connection.updateViewPosition();
-            connection.sendChunkDataAndLight(this.worlds[0].getChunkAt(0,0));
+            for(let x=-2;x<=2;x++) {
+                for(let z=-2;z<=2;z++) {
+                    connection.sendChunkDataAndLight(await this.worlds[0].getChunkAt(x,z));
+                }
+            }
+            connection.sendPlayerPosAndLook();
         });
     }
 }

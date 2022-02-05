@@ -38,7 +38,7 @@ export class World {
     public async loadChunk(chunk_x: number, chunk_z: number) {
         const compressed_xz = compressXZ(chunk_x,chunk_z);
         if(this.chunks[compressed_xz]) {
-            return;
+            return this.chunks[compressed_xz];
         }
         const region_coords = Region.chunkCoordsToRegion(chunk_x,chunk_z);
         const compresed_region_xz = compressXZ(region_coords[0], region_coords[1]);
@@ -47,16 +47,14 @@ export class World {
         }
         const region = this.regions[compresed_region_xz];
         const chunk_nbt = await region.readChunk(chunk_x,chunk_z);
-        let chunk;
         if(chunk_nbt) {
-            chunk = new Chunk();
+            const chunk = new Chunk();
             for(const sections of (chunk_nbt.getTagByName("sections") as NBT_Tag_List).get() as NBT_Tag_Compound[]) {
                 const y = (sections.getTagByName("Y") as NBT_Tag_Byte).get();
                 const block_states = (sections.getTagByName("block_states") as NBT_Tag_Compound);
                 const palette = (block_states.getTagByName("palette") as NBT_Tag_List).get() as NBT_Tag_Compound[];
-                let data;
                 if(palette.length > 1) {
-                    data = (block_states.getTagByName("data") as NBT_Tag_Long_Array).get();
+                    const data = (block_states.getTagByName("data") as NBT_Tag_Long_Array).get();
                     const bits_per_id = Math.ceil(Math.log2(palette.length));
                     for(let rel_y = 0; rel_y < 16; rel_y++) {
                         for(let block_z = 0; block_z < 16; block_z++) {
@@ -90,18 +88,25 @@ export class World {
             this.chunks[compressed_xz] = chunk;
             return chunk;
         }
-        if(!chunk) {
-            this.chunks[compressed_xz] = this.generateChunk(chunk_x, chunk_z);
-        }
+        const chunk = this.generateChunk(chunk_x, chunk_z);
+        this.chunks[compressed_xz] = chunk;
+        return chunk;
+    }
+
+    private isChunkLoadedXZ(chunk_xz: string) {
+        return !!this.chunks[chunk_xz];
     }
 
     public isChunkLoaded(chunk_x: number, chunk_z: number) {
         const chunk_xz = compressXZ(chunk_x, chunk_z);
-        return !!this.chunks[chunk_xz];
+        return this.isChunkLoadedXZ(chunk_xz);
     }
 
-    public getChunkAt(chunk_x: number, chunk_z: number) {
+    public async getChunkAt(chunk_x: number, chunk_z: number) {
         const chunk_xz = compressXZ(chunk_x, chunk_z);
+        if(!this.isChunkLoadedXZ(chunk_xz)) {
+            return this.loadChunk(chunk_x,chunk_z);
+        }
         return this.chunks[chunk_xz];
     }
 }
