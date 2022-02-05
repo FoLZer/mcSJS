@@ -7,6 +7,10 @@ export class NBT_Tag {
         this.name = name;
     }
 
+    public get(): any {
+        return;
+    }
+
     public getName() {
         return this.name;
     }
@@ -52,6 +56,10 @@ export class NBT_Tag_Short extends NBT_Tag {
         this.payload = payload;
     }
 
+    public get() {
+        return this.payload;
+    }
+
     public toBuffer(): Buffer {
         const buf = Buffer.alloc(1+2+Buffer.byteLength(this.getName())+this.getByteSize());
         buf.writeUInt8(2, 0);
@@ -71,6 +79,10 @@ export class NBT_Tag_Int extends NBT_Tag {
     constructor(name: string, payload: number) {
         super(name);
         this.payload = payload;
+    }
+
+    public get() {
+        return this.payload;
     }
 
     public toBuffer(): Buffer {
@@ -94,6 +106,10 @@ export class NBT_Tag_Long extends NBT_Tag {
         this.payload = payload;
     }
 
+    public get() {
+        return this.payload;
+    }
+
     public toBuffer(): Buffer {
         const buf = Buffer.alloc(1+2+Buffer.byteLength(this.getName())+this.getByteSize());
         buf.writeUInt8(4, 0);
@@ -113,6 +129,10 @@ export class NBT_Tag_Float extends NBT_Tag {
     constructor(name: string, payload: number) {
         super(name);
         this.payload = payload;
+    }
+
+    public get() {
+        return this.payload;
     }
 
     public toBuffer(): Buffer {
@@ -136,6 +156,10 @@ export class NBT_Tag_Double extends NBT_Tag {
         this.payload = payload;
     }
 
+    public get() {
+        return this.payload;
+    }
+
     public toBuffer(): Buffer {
         const buf = Buffer.alloc(1+2+Buffer.byteLength(this.getName())+this.getByteSize());
         buf.writeUInt8(6, 0);
@@ -155,6 +179,10 @@ export class NBT_Tag_Byte_Array extends NBT_Tag {
     constructor(name: string, payload: number[]) {
         super(name);
         this.payload = payload;
+    }
+
+    public get() {
+        return this.payload;
     }
 
     public toBuffer(): Buffer {
@@ -207,11 +235,11 @@ export class NBT_Tag_List extends NBT_Tag {
         this.type_id = type_id;
     }
 
-    public get(i: number) {
+    public getI(i: number) {
         return this.payload[i];
     }
 
-    public getArray() {
+    public get() {
         return this.payload;
     }
 
@@ -251,8 +279,16 @@ export class NBT_Tag_Compound extends NBT_Tag {
         }
     }
 
-    getTagByName(name: string) {
+    public getTagByName(name: string) {
         return this.payload[name];
+    }
+
+    public get() {
+        const o = {} as {[k: string]: any};
+        for(const tag_name of Object.keys(this.payload)) {
+            o[tag_name] = this.payload[tag_name].get();
+        }
+        return o;
     }
 
     public toBuffer(): Buffer {
@@ -285,6 +321,10 @@ export class NBT_Tag_Int_Array extends NBT_Tag {
     constructor(name: string, payload: number[]) {
         super(name);
         this.payload = payload;
+    }
+
+    public get() {
+        return this.payload;
     }
 
     public toBuffer(): Buffer {

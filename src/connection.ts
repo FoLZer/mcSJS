@@ -345,7 +345,7 @@ export default class Connection extends EventEmitter {
             (((
                 dimension_codec.getTagByName("minecraft:dimension_type") as NBT_Tag_Compound)
             .getTagByName("value") as NBT_Tag_List)
-            .get(0) as NBT_Tag_Compound)
+            .getI(0) as NBT_Tag_Compound)
             .getTagByName("element") as NBT_Tag_Compound,
             "minecraft:overworld",0n,100,3,3,false,true,false,false
         ));

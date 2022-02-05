@@ -50,10 +50,10 @@ export class World {
         let chunk;
         if(chunk_nbt) {
             chunk = new Chunk();
-            for(const sections of (chunk_nbt.getTagByName("sections") as NBT_Tag_List).getArray() as NBT_Tag_Compound[]) {
+            for(const sections of (chunk_nbt.getTagByName("sections") as NBT_Tag_List).get() as NBT_Tag_Compound[]) {
                 const y = (sections.getTagByName("Y") as NBT_Tag_Byte).get();
                 const block_states = (sections.getTagByName("block_states") as NBT_Tag_Compound);
-                const palette = (block_states.getTagByName("palette") as NBT_Tag_List).getArray() as NBT_Tag_Compound[];
+                const palette = (block_states.getTagByName("palette") as NBT_Tag_List).get() as NBT_Tag_Compound[];
                 let data;
                 if(palette.length > 1) {
                     data = (block_states.getTagByName("data") as NBT_Tag_Long_Array).get();
@@ -77,8 +77,10 @@ export class World {
                                 if(!block_nbt) {
                                     continue;
                                 }
-                                const block_obj = {name: (block_nbt.getTagByName("Name") as NBT_Tag_String).get(),properties: (block_nbt.getTagByName("Properties") as NBT_Tag_Compound)};
-                                const block = new Block(block_obj.name);
+                                const name = block_nbt.getTagByName("Name") as NBT_Tag_String;
+                                const properties = block_nbt.getTagByName("Properties") as NBT_Tag_Compound;
+                                const block_obj = {name: name.get(),properties: properties ? properties.get() : null};
+                                const block = new Block(block_obj.name, block_obj.properties);
                                 chunk.setBlock(block_x,block_y,block_z, block);
                             }
                         }
