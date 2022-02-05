@@ -1,236 +1,238 @@
 import { NBT_Tag_type } from "./Enums";
 
 export class NBT_Tag {
-    name: string;
+    private name: string;
 
-    constructor() {
-        this.name = "";
+    constructor(name: string) {
+        this.name = name;
     }
 
-    toBuffer() {
+    public getName() {
+        return this.name;
+    }
+
+    public toBuffer() {
         return Buffer.alloc(0);
     }
 
-    getByteSize() {
+    public getByteSize() {
         return 0;
     }
 }
 
 export class NBT_Tag_Byte extends NBT_Tag {
-    name: string;
-    payload: number;
+    private payload: number;
     constructor(name: string, payload: number) {
-        super();
-        this.name = name;
+        super(name);
         this.payload = payload;
     }
 
-    toBuffer(): Buffer {
-        const buf = Buffer.alloc(1+2+Buffer.byteLength(this.name)+this.getByteSize());
+    public get() {
+        return this.payload;
+    }
+
+    public toBuffer(): Buffer {
+        const buf = Buffer.alloc(1+2+Buffer.byteLength(this.getName())+this.getByteSize());
         buf.writeUInt8(1, 0);
-        buf.writeInt16BE(Buffer.byteLength(this.name), 1);
-        Buffer.from(this.name).copy(buf, 3);
-        buf.writeInt8(this.payload, 1+2+Buffer.byteLength(this.name));
+        buf.writeInt16BE(Buffer.byteLength(this.getName()), 1);
+        Buffer.from(this.getName()).copy(buf, 3);
+        buf.writeInt8(this.payload, 1+2+Buffer.byteLength(this.getName()));
         return buf;
     }
 
-    getByteSize(): number {
+    public getByteSize(): number {
         return 1;
     }
 }
 
 export class NBT_Tag_Short extends NBT_Tag {
-    name: string;
-    payload: number;
+    private payload: number;
     constructor(name: string, payload: number) {
-        super();
-        this.name = name;
+        super(name);
         this.payload = payload;
     }
 
-    toBuffer(): Buffer {
-        const buf = Buffer.alloc(1+2+Buffer.byteLength(this.name)+this.getByteSize());
+    public toBuffer(): Buffer {
+        const buf = Buffer.alloc(1+2+Buffer.byteLength(this.getName())+this.getByteSize());
         buf.writeUInt8(2, 0);
-        buf.writeInt16BE(Buffer.byteLength(this.name), 1);
-        Buffer.from(this.name).copy(buf, 3);
-        buf.writeInt16BE(this.payload, 1+2+Buffer.byteLength(this.name));
+        buf.writeInt16BE(Buffer.byteLength(this.getName()), 1);
+        Buffer.from(this.getName()).copy(buf, 3);
+        buf.writeInt16BE(this.payload, 1+2+Buffer.byteLength(this.getName()));
         return buf;
     }
 
-    getByteSize(): number {
+    public getByteSize(): number {
         return 2;
     }
 }
 
 export class NBT_Tag_Int extends NBT_Tag {
-    name: string;
-    payload: number;
+    private payload: number;
     constructor(name: string, payload: number) {
-        super();
-        this.name = name;
+        super(name);
         this.payload = payload;
     }
 
-    toBuffer(): Buffer {
-        const buf = Buffer.alloc(1+2+Buffer.byteLength(this.name)+this.getByteSize());
+    public toBuffer(): Buffer {
+        const buf = Buffer.alloc(1+2+Buffer.byteLength(this.getName())+this.getByteSize());
         buf.writeUInt8(3, 0);
-        buf.writeInt16BE(Buffer.byteLength(this.name), 1);
-        Buffer.from(this.name).copy(buf, 3);
-        buf.writeInt32BE(this.payload, 1+2+Buffer.byteLength(this.name));
+        buf.writeInt16BE(Buffer.byteLength(this.getName()), 1);
+        Buffer.from(this.getName()).copy(buf, 3);
+        buf.writeInt32BE(this.payload, 1+2+Buffer.byteLength(this.getName()));
         return buf;
     }
 
-    getByteSize(): number {
+    public getByteSize(): number {
         return 4;
     }
 }
 
 export class NBT_Tag_Long extends NBT_Tag {
-    name: string;
-    payload: bigint;
+    private payload: bigint;
     constructor(name: string, payload: bigint) {
-        super();
-        this.name = name;
+        super(name);
         this.payload = payload;
     }
 
-    toBuffer(): Buffer {
-        const buf = Buffer.alloc(1+2+Buffer.byteLength(this.name)+this.getByteSize());
+    public toBuffer(): Buffer {
+        const buf = Buffer.alloc(1+2+Buffer.byteLength(this.getName())+this.getByteSize());
         buf.writeUInt8(4, 0);
-        buf.writeInt16BE(Buffer.byteLength(this.name), 1);
-        Buffer.from(this.name).copy(buf, 3);
-        buf.writeBigInt64BE(this.payload, 1+2+Buffer.byteLength(this.name));
+        buf.writeInt16BE(Buffer.byteLength(this.getName()), 1);
+        Buffer.from(this.getName()).copy(buf, 3);
+        buf.writeBigInt64BE(this.payload, 1+2+Buffer.byteLength(this.getName()));
         return buf;
     }
 
-    getByteSize(): number {
+    public getByteSize(): number {
         return 8;
     }
 }
 
 export class NBT_Tag_Float extends NBT_Tag {
-    name: string;
-    payload: number;
+    private payload: number;
     constructor(name: string, payload: number) {
-        super();
-        this.name = name;
+        super(name);
         this.payload = payload;
     }
 
-    toBuffer(): Buffer {
-        const buf = Buffer.alloc(1+2+Buffer.byteLength(this.name)+this.getByteSize());
+    public toBuffer(): Buffer {
+        const buf = Buffer.alloc(1+2+Buffer.byteLength(this.getName())+this.getByteSize());
         buf.writeUInt8(5, 0);
-        buf.writeInt16BE(Buffer.byteLength(this.name), 1);
-        Buffer.from(this.name).copy(buf, 3);
-        buf.writeFloatBE(this.payload, 1+2+Buffer.byteLength(this.name));
+        buf.writeInt16BE(Buffer.byteLength(this.getName()), 1);
+        Buffer.from(this.getName()).copy(buf, 3);
+        buf.writeFloatBE(this.payload, 1+2+Buffer.byteLength(this.getName()));
         return buf;
     }
 
-    getByteSize(): number {
+    public getByteSize(): number {
         return 4;
     }
 }
 
 export class NBT_Tag_Double extends NBT_Tag {
-    name: string;
-    payload: number;
+    private payload: number;
     constructor(name: string, payload: number) {
-        super();
-        this.name = name;
+        super(name);
         this.payload = payload;
     }
 
-    toBuffer(): Buffer {
-        const buf = Buffer.alloc(1+2+Buffer.byteLength(this.name)+this.getByteSize());
+    public toBuffer(): Buffer {
+        const buf = Buffer.alloc(1+2+Buffer.byteLength(this.getName())+this.getByteSize());
         buf.writeUInt8(6, 0);
-        buf.writeInt16BE(Buffer.byteLength(this.name), 1);
-        Buffer.from(this.name).copy(buf, 3);
-        buf.writeDoubleBE(this.payload, 1+2+Buffer.byteLength(this.name));
+        buf.writeInt16BE(Buffer.byteLength(this.getName()), 1);
+        Buffer.from(this.getName()).copy(buf, 3);
+        buf.writeDoubleBE(this.payload, 1+2+Buffer.byteLength(this.getName()));
         return buf;
     }
 
-    getByteSize(): number {
+    public getByteSize(): number {
         return 8;
     }
 }
 
 export class NBT_Tag_Byte_Array extends NBT_Tag {
-    name: string;
-    payload: number[];
+    private payload: number[];
     constructor(name: string, payload: number[]) {
-        super();
-        this.name = name;
+        super(name);
         this.payload = payload;
     }
 
-    toBuffer(): Buffer {
-        const buf = Buffer.alloc(1+2+Buffer.byteLength(this.name)+this.getByteSize());
+    public toBuffer(): Buffer {
+        const buf = Buffer.alloc(1+2+Buffer.byteLength(this.getName())+this.getByteSize());
         buf.writeUInt8(7, 0);
-        buf.writeInt16BE(Buffer.byteLength(this.name), 1);
-        Buffer.from(this.name).copy(buf, 3);
-        buf.writeInt32BE(this.payload.length, 1+2+Buffer.byteLength(this.name));
-        Buffer.from(this.payload).copy(buf, 1+2+Buffer.byteLength(this.name)+4);
+        buf.writeInt16BE(Buffer.byteLength(this.getName()), 1);
+        Buffer.from(this.getName()).copy(buf, 3);
+        buf.writeInt32BE(this.payload.length, 1+2+Buffer.byteLength(this.getName()));
+        Buffer.from(this.payload).copy(buf, 1+2+Buffer.byteLength(this.getName())+4);
         return buf;
     }
 
-    getByteSize(): number {
+    public getByteSize(): number {
         return 4+this.payload.length;
     }
 }
 
 export class NBT_Tag_String extends NBT_Tag {
-    name: string;
-    payload: string;
+    private payload: string;
     constructor(name: string, payload: string) {
-        super();
-        this.name = name;
+        super(name);
         this.payload = payload;
     }
 
-    toBuffer(): Buffer {
-        const buf = Buffer.alloc(1+2+Buffer.byteLength(this.name)+this.getByteSize());
+    public get() {
+        return this.payload;
+    }
+
+    public toBuffer(): Buffer {
+        const buf = Buffer.alloc(1+2+Buffer.byteLength(this.getName())+this.getByteSize());
         buf.writeUInt8(8, 0);
-        buf.writeInt16BE(Buffer.byteLength(this.name), 1);
-        Buffer.from(this.name).copy(buf, 3);
-        buf.writeUInt16BE(Buffer.byteLength(this.payload), 1+2+Buffer.byteLength(this.name));
-        Buffer.from(this.payload).copy(buf, 1+2+Buffer.byteLength(this.name)+2);
+        buf.writeInt16BE(Buffer.byteLength(this.getName()), 1);
+        Buffer.from(this.getName()).copy(buf, 3);
+        buf.writeUInt16BE(Buffer.byteLength(this.payload), 1+2+Buffer.byteLength(this.getName()));
+        Buffer.from(this.payload).copy(buf, 1+2+Buffer.byteLength(this.getName())+2);
         return buf;
     }
 
-    getByteSize(): number {
+    public getByteSize(): number {
         return 2+Buffer.byteLength(this.payload);
     }
 }
 
 export class NBT_Tag_List extends NBT_Tag {
-    name: string;
-    type_id: NBT_Tag_type;
-    payload: NBT_Tag[];
+    private type_id: NBT_Tag_type;
+    private payload: NBT_Tag[];
     constructor(name: string, type_id: NBT_Tag_type, payload: NBT_Tag[]) {
-        super();
-        this.name = name;
+        super(name);
         this.payload = payload;
         this.type_id = type_id;
     }
 
-    toBuffer(): Buffer {
-        const buf = Buffer.alloc(1+2+Buffer.byteLength(this.name)+this.getByteSize());
+    public get(i: number) {
+        return this.payload[i];
+    }
+
+    public getArray() {
+        return this.payload;
+    }
+
+    public toBuffer(): Buffer {
+        const buf = Buffer.alloc(1+2+Buffer.byteLength(this.getName())+this.getByteSize());
         buf.writeUInt8(9, 0);
-        buf.writeInt16BE(Buffer.byteLength(this.name), 1);
-        Buffer.from(this.name).copy(buf, 3);
-        buf.writeUInt8(this.type_id, 1+2+Buffer.byteLength(this.name));
-        buf.writeInt32BE(this.payload.length, 1+2+Buffer.byteLength(this.name)+1);
+        buf.writeInt16BE(Buffer.byteLength(this.getName()), 1);
+        Buffer.from(this.getName()).copy(buf, 3);
+        buf.writeUInt8(this.type_id, 1+2+Buffer.byteLength(this.getName()));
+        buf.writeInt32BE(this.payload.length, 1+2+Buffer.byteLength(this.getName())+1);
         let s = 0;
         for(const tag of this.payload) {
             const b = tag.toBuffer();
             const n_l = b.readInt16BE(1);
-            b.copy(buf, 1+2+Buffer.byteLength(this.name)+1+4+s, 1+2+n_l);
+            b.copy(buf, 1+2+Buffer.byteLength(this.getName())+1+4+s, 1+2+n_l);
             s += tag.getByteSize();
         }
         return buf;
     }
 
-    getByteSize(): number {
+    public getByteSize(): number {
         let payload_size = 0;
         for(const tag of this.payload) {
             payload_size += tag.getByteSize();
@@ -240,87 +242,92 @@ export class NBT_Tag_List extends NBT_Tag {
 }
 
 export class NBT_Tag_Compound extends NBT_Tag {
-    name: string;
-    payload: NBT_Tag[];
+    private payload: {[tag_name: string]: NBT_Tag};
     constructor(name: string, payload: NBT_Tag[]) {
-        super();
-        this.name = name;
-        this.payload = payload;
+        super(name);
+        this.payload = {};
+        for(const tag of payload) {
+            this.payload[tag.getName()] = tag;
+        }
     }
 
-    toBuffer(): Buffer {
-        const buf = Buffer.alloc(1+2+Buffer.byteLength(this.name)+this.getByteSize());
+    getTagByName(name: string) {
+        return this.payload[name];
+    }
+
+    public toBuffer(): Buffer {
+        const buf = Buffer.alloc(1+2+Buffer.byteLength(this.getName())+this.getByteSize());
         buf.writeUInt8(10, 0);
-        buf.writeInt16BE(Buffer.byteLength(this.name), 1);
-        Buffer.from(this.name).copy(buf, 3);
+        buf.writeInt16BE(Buffer.byteLength(this.getName()), 1);
+        Buffer.from(this.getName()).copy(buf, 3);
         let s = 0;
-        for(const tag of this.payload) {
+        for(const tag of Object.values(this.payload)) {
             const b = tag.toBuffer();
             const n_l = b.readInt16BE(1);
-            b.copy(buf, 1+2+Buffer.byteLength(this.name)+s);
+            b.copy(buf, 1+2+Buffer.byteLength(this.getName())+s);
             s += 1+2+n_l+tag.getByteSize();
         }
-        buf.writeUInt8(NBT_Tag_type.TAG_End, 1+2+Buffer.byteLength(this.name)+s);
+        buf.writeUInt8(NBT_Tag_type.TAG_End, 1+2+Buffer.byteLength(this.getName())+s);
         return buf;
     }
 
-    getByteSize(): number {
+    public getByteSize(): number {
         let payload_size = 0;
-        for(const tag of this.payload) {
-            payload_size += 1+2+Buffer.byteLength(tag.name)+tag.getByteSize();
+        for(const tag of Object.values(this.payload)) {
+            payload_size += 1+2+Buffer.byteLength(tag.getName())+tag.getByteSize();
         }
         return payload_size+1;
     }
 }
 
 export class NBT_Tag_Int_Array extends NBT_Tag {
-    name: string;
-    payload: number[];
+    private payload: number[];
     constructor(name: string, payload: number[]) {
-        super();
-        this.name = name;
+        super(name);
         this.payload = payload;
     }
 
-    toBuffer(): Buffer {
-        const buf = Buffer.alloc(1+2+Buffer.byteLength(this.name)+this.getByteSize());
+    public toBuffer(): Buffer {
+        const buf = Buffer.alloc(1+2+Buffer.byteLength(this.getName())+this.getByteSize());
         buf.writeUInt8(11, 0);
-        buf.writeInt16BE(Buffer.byteLength(this.name), 1);
-        Buffer.from(this.name).copy(buf, 3);
-        buf.writeInt32BE(this.payload.length, 1+2+Buffer.byteLength(this.name));
+        buf.writeInt16BE(Buffer.byteLength(this.getName()), 1);
+        Buffer.from(this.getName()).copy(buf, 3);
+        buf.writeInt32BE(this.payload.length, 1+2+Buffer.byteLength(this.getName()));
         for(let i=0;i<this.payload.length;i++) {
-            buf.writeInt32BE(this.payload[i], 1+2+Buffer.byteLength(this.name)+4+i*4);
+            buf.writeInt32BE(this.payload[i], 1+2+Buffer.byteLength(this.getName())+4+i*4);
         }
         return buf;
     }
 
-    getByteSize(): number {
+    public getByteSize(): number {
         return 4+this.payload.length*4;
     }
 }
 
 export class NBT_Tag_Long_Array extends NBT_Tag {
-    name: string;
-    payload: bigint[];
+    private payload: bigint[];
     constructor(name: string, payload: bigint[]) {
-        super();
-        this.name = name;
+        super(name);
         this.payload = payload;
     }
 
-    toBuffer(): Buffer {
-        const buf = Buffer.alloc(1+2+Buffer.byteLength(this.name)+this.getByteSize());
+    public get() {
+        return this.payload;
+    }
+
+    public toBuffer(): Buffer {
+        const buf = Buffer.alloc(1+2+Buffer.byteLength(this.getName())+this.getByteSize());
         buf.writeUInt8(12, 0);
-        buf.writeInt16BE(Buffer.byteLength(this.name), 1);
-        Buffer.from(this.name).copy(buf, 3);
-        buf.writeInt32BE(this.payload.length, 1+2+Buffer.byteLength(this.name));
+        buf.writeInt16BE(Buffer.byteLength(this.getName()), 1);
+        Buffer.from(this.getName()).copy(buf, 3);
+        buf.writeInt32BE(this.payload.length, 1+2+Buffer.byteLength(this.getName()));
         for(let i=0;i<this.payload.length;i++) {
-            buf.writeBigInt64BE(this.payload[i], 1+2+Buffer.byteLength(this.name)+4+i*8);
+            buf.writeBigInt64BE(this.payload[i], 1+2+Buffer.byteLength(this.getName())+4+i*8);
         }
         return buf;
     }
 
-    getByteSize(): number {
+    public getByteSize(): number {
         return 4+this.payload.length*8;
     }
 }
@@ -405,7 +412,7 @@ export function parseTag(data: Buffer): NBT_Tag {
     }
     switch(id) {
         case NBT_Tag_type.TAG_Byte: {
-            const payload = data.readUInt8(1+2+name_length);
+            const payload = data.readInt8(1+2+name_length);
             return new NBT_Tag_Byte(name, payload);
         }
         case NBT_Tag_type.TAG_Short: {

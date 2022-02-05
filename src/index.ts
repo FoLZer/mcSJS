@@ -1,7 +1,10 @@
-import net from "net";
-import Connection from "./connection";
+import { Dimensions } from "./Enums";
 import { Server } from "./structures/Server";
+import { World } from "./structures/World";
 
 const port = 25565;
 
-const server = new Server(port);
+new Server(port);
+
+const w = new World("world", Dimensions.Overworld);
+w.loadChunk(0,0); //TEST

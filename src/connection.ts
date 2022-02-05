@@ -342,7 +342,11 @@ export default class Connection extends EventEmitter {
     public sendJoinGame() {
         this.sendPacket(new packets.Server.Play[38](
             0,false,0,-1,["minecraft:overworld"],dimension_codec,
-            (((dimension_codec.payload[0] as NBT_Tag_Compound).payload[1] as NBT_Tag_List).payload[0] as NBT_Tag_Compound).payload[2] as NBT_Tag_Compound,
+            (((
+                dimension_codec.getTagByName("minecraft:dimension_type") as NBT_Tag_Compound)
+            .getTagByName("value") as NBT_Tag_List)
+            .get(0) as NBT_Tag_Compound)
+            .getTagByName("element") as NBT_Tag_Compound,
             "minecraft:overworld",0n,100,3,3,false,true,false,false
         ));
     }

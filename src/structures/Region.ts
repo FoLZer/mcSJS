@@ -1,10 +1,10 @@
-import { decompressXZ } from "./World";
 import path from "path";
 import fs from "fs";
 import { promisify } from "util";
 import zlib from "zlib";
-import { NBT_Tag, parseTag } from "../NBT";
+import { NBT_Tag_Compound, parseTag } from "../NBT";
 import { Dimensions } from "../Enums";
+import { decompressXZ } from "../Util";
 const gunzip = promisify(zlib.gunzip);
 const zlib_unzip = promisify(zlib.unzip);
 
@@ -92,13 +92,12 @@ export class Region {
                     throw new Error("Unknown compression used!");
                 }
             }
-            const chunk_nbt = parseTag(chunk_raw);
-            console.log(chunk_nbt);
+            const chunk_nbt = parseTag(chunk_raw) as NBT_Tag_Compound;
             resolve(chunk_nbt);
             this.in_use--;
             if(this.in_use <= 0) {
                 this.fd.close();
             }
-        }) as Promise<NBT_Tag | null>;
+        }) as Promise<NBT_Tag_Compound | null>;
     }
 }
