@@ -1,5 +1,22 @@
 import BufferAccess from "./buffer/BufferAccess";
 
+export class SingleValuedPalette {
+    data: number;
+
+    constructor(data: number) {
+        this.data = data;
+    }
+
+    public Serealize() {
+        const buf = Buffer.alloc(1+BufferAccess.getVarIntLength(this.data));
+        const bufAcc = new BufferAccess(buf);
+        bufAcc.writeUint8(0);
+        bufAcc.writeVarInt(this.data);
+        bufAcc.writeVarInt(0);
+        return buf;
+    }
+}
+
 export class IndirectPalette {
     data: bigint[];
     palette: number[];
