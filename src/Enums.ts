@@ -25,6 +25,14 @@ export enum Node_types {
     argument
 }
 
+export enum Entity_status {
+    op_permission_level_0 = 24,
+    op_permission_level_1 = 25,
+    op_permission_level_2 = 26,
+    op_permission_level_3 = 27,
+    op_permission_level_4 = 28,
+}
+
 export enum CommandParsers {
     bool = "brigadier:bool",
     double = "brigadier:double",

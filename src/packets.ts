@@ -6,6 +6,13 @@ import { Difficulty } from "./Enums";
 
 class Packet {}
 
+type Slot = {
+    present: boolean;
+    item_id?: number;
+    item_count?: number;
+    nbt?: NBT_Tag;
+}
+
 export class ClientPacket extends Packet {
     private id: number;
 
@@ -305,6 +312,60 @@ const packets = {
                         }
                     }
                     bufAcc.writeVarInt(this.root_index);
+                    return buf;
+                }
+            },
+            20: class WindowItems extends ServerPacket {
+                window_id: number;
+                state_id: number;
+                slot_data: Slot[];
+                carried_item: Slot;
+
+                constructor(window_id: number, state_id: number, slot_data: Slot[], carried_item: Slot) {
+                    super(20);
+                    this.window_id = window_id;
+                    this.state_id = state_id;
+                    this.slot_data = slot_data;
+                    this.carried_item = carried_item;
+                }
+
+                public Serealize(): Buffer {
+                    let size = 1;
+                    size += BufferAccess.getVarIntLength(this.state_id);
+                    size += BufferAccess.getVarIntLength(this.slot_data.length);
+                    for(const slot of this.slot_data) {
+                        size += 1;
+                        if(slot.present) {
+                            size += BufferAccess.getVarIntLength(slot.item_id as number);
+                            size += 1;
+                            size += (slot.nbt as NBT_Tag).toBuffer().byteLength;
+                        }
+                    }
+                    size += 1;
+                    if(this.carried_item.present) {
+                        size += BufferAccess.getVarIntLength(this.carried_item.item_id as number);
+                        size += 1;
+                        size += (this.carried_item.nbt as NBT_Tag).toBuffer().byteLength;
+                    }
+                    const buf = Buffer.allocUnsafe(size);
+                    const bufAcc = new BufferAccess(buf);
+                    bufAcc.writeUint8(this.window_id);
+                    bufAcc.writeVarInt(this.state_id);
+                    bufAcc.writeVarInt(this.slot_data.length);
+                    for(const slot of this.slot_data) {
+                        bufAcc.writeBoolean(slot.present);
+                        if(slot.present) {
+                            bufAcc.writeVarInt(slot.item_id as number);
+                            bufAcc.writeInt8(slot.item_count as number);
+                            bufAcc.writeBuf((slot.nbt as NBT_Tag).toBuffer());
+                        }
+                    }
+                    bufAcc.writeBoolean(this.carried_item.present);
+                    if(this.carried_item.present) {
+                        bufAcc.writeVarInt(this.carried_item.item_id as number);
+                        bufAcc.writeInt8(this.carried_item.item_count as number);
+                        bufAcc.writeBuf((this.carried_item.nbt as NBT_Tag).toBuffer());
+                    }
                     return buf;
                 }
             },
@@ -786,6 +847,29 @@ const packets = {
                     const bufAcc = new BufferAccess(buf);
                     bufAcc.writeVarInt(this.chunk_x);
                     bufAcc.writeVarInt(this.chunk_z);
+                    return buf;
+                }
+            },
+            75: class SpawnPosition extends ServerPacket {
+                x: number;
+                y: number;
+                z: number;
+                angle: number;
+
+                constructor(x: number, y: number, z: number, angle: number) {
+                    super(75);
+                    this.x = x;
+                    this.y = y;
+                    this.z = z;
+                    this.angle = angle;
+                }
+
+                public Serealize(): Buffer {
+                    const buf = Buffer.allocUnsafe(8+4);
+                    const bufAcc = new BufferAccess(buf);
+                    const pos = ((BigInt(this.x & 0x3FFFFFF) << 38n) | (BigInt(this.z & 0x3FFFFFF) << 12n) | BigInt(this.y & 0xFFF))
+                    bufAcc.writeUint64(pos);
+                    bufAcc.writeFloat(this.angle);
                     return buf;
                 }
             },

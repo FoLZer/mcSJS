@@ -47,48 +47,12 @@ export class World {
         }
         const region = this.regions[compresed_region_xz];
         const chunk_nbt = await region.readChunk(chunk_x,chunk_z);
+        let chunk;
         if(chunk_nbt) {
-            const chunk = new Chunk();
-            for(const sections of (chunk_nbt.getTagByName("sections") as NBT_Tag_List).get() as NBT_Tag_Compound[]) {
-                const y = (sections.getTagByName("Y") as NBT_Tag_Byte).get();
-                const block_states = (sections.getTagByName("block_states") as NBT_Tag_Compound);
-                const palette = (block_states.getTagByName("palette") as NBT_Tag_List).get() as NBT_Tag_Compound[];
-                if(palette.length > 1) {
-                    const data = (block_states.getTagByName("data") as NBT_Tag_Long_Array).get();
-                    const bits_per_id = Math.ceil(Math.log2(palette.length));
-                    for(let rel_y = 0; rel_y < 16; rel_y++) {
-                        for(let block_z = 0; block_z < 16; block_z++) {
-                            for(let block_x = 0; block_x < 16; block_x++) {
-                                const i = rel_y << 8 | block_z << 4 | block_x;
-                                const long_s = Math.floor((i*bits_per_id) / 64);
-                                let shift = (i*bits_per_id) % 64;
-                                let palette_id_raw = data[long_s] >> BigInt(shift);
-                                if(shift + bits_per_id > 64) {
-                                    const left_to_read = bits_per_id - (64 - shift);
-                                    palette_id_raw <<= BigInt(left_to_read);
-                                    palette_id_raw |= data[long_s+1] >> BigInt(64 - left_to_read);
-                                }
-                                const conf_bits = BigInt((1 << (bits_per_id)) - 1);
-                                const palette_id = Number(palette_id_raw & conf_bits);
-                                const block_nbt = palette[palette_id];
-                                const block_y = y * 16 + rel_y;
-                                if(!block_nbt) {
-                                    continue;
-                                }
-                                const name = block_nbt.getTagByName("Name") as NBT_Tag_String;
-                                const properties = block_nbt.getTagByName("Properties") as NBT_Tag_Compound;
-                                const block_obj = {name: name.get(),properties: properties ? properties.get() : null};
-                                const block = new Block(block_obj.name, block_obj.properties);
-                                chunk.setBlock(block_x,block_y,block_z, block);
-                            }
-                        }
-                    }
-                }
-            }
-            this.chunks[compressed_xz] = chunk;
-            return chunk;
+            chunk = Chunk.fromNBT(chunk_nbt);
+        } else {
+            chunk = this.generateChunk(chunk_x, chunk_z);
         }
-        const chunk = this.generateChunk(chunk_x, chunk_z);
         this.chunks[compressed_xz] = chunk;
         return chunk;
     }

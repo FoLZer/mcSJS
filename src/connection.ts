@@ -5,9 +5,10 @@ import BufferAccess from "./buffer/BufferAccess";
 import { packets, ClientPacket, ServerPacket } from "./packets";
 import { NBT_Tag_Byte, NBT_Tag_Compound, NBT_Tag_Double, NBT_Tag_Float, NBT_Tag_Int, NBT_Tag_List, NBT_Tag_Long, NBT_Tag_Long_Array, NBT_Tag_String } from "./NBT";
 import EventEmitter from "events";
-import { ConnectionState, Difficulty, NBT_Tag_type } from "./Enums";
+import { ConnectionState, Difficulty, Entity_status, NBT_Tag_type } from "./Enums";
 import { Player } from "./structures/Player";
 import { Chunk } from "./structures/Chunk";
+import tags from "./tags";
 
 const key_pair = crypto.generateKeyPairSync("rsa" as any, {
     modulusLength: 1024,
@@ -274,13 +275,13 @@ export default class Connection extends EventEmitter {
         bufAcc.writeVarInt(data.byteLength+id_length);
         bufAcc.writeVarInt(packet.getId());
         bufAcc.writeBuf(data);
-        if(this.socket.writable) {
+        return new Promise((resolve) => {
             console.log("write_packet", buf);
-            this.socket.write(buf);
-        }
+            this.socket.write(buf, () => {resolve(null)});
+        });
     }
 
-    private onPacket(packet: ClientPacket) {
+    private async onPacket(packet: ClientPacket) {
         switch(this.state) {
             case ConnectionState.Handshake: {
                 switch(packet.getId()) {
@@ -299,11 +300,11 @@ export default class Connection extends EventEmitter {
             case ConnectionState.Status: {
                 switch(packet.getId()) {
                     case 0: {
-                        this.sendPacket(new packets.Server.Status[0]());
+                        await this.sendPacket(new packets.Server.Status[0]());
                         break;
                     }
                     case 1: {
-                        this.sendPacket(new packets.Server.Status[1]((packet as any).payload));
+                        await this.sendPacket(new packets.Server.Status[1]((packet as any).payload));
                         this.disconnect();
                         break;
                     }
@@ -318,7 +319,7 @@ export default class Connection extends EventEmitter {
                             throw new Error("No username was found during login start!");
                         }
                         const uuid = UUID.v3({"name": this.username, "namespace": "d8238f96-d2e9-472e-bfca-78f34fa44e9f"})
-                        this.sendPacket(new packets.Server.Login[2](uuid, this.username));
+                        await this.sendPacket(new packets.Server.Login[2](uuid, this.username));
                         this.emit("login_done", this.username, uuid);
                         break;
                         /*
@@ -356,8 +357,8 @@ export default class Connection extends EventEmitter {
         }
     }
 
-    public sendJoinGame() {
-        this.sendPacket(new packets.Server.Play[38](
+    public async sendJoinGame() {
+        return this.sendPacket(new packets.Server.Play[38](
             0,false,0,-1,["minecraft:overworld"],dimension_codec,
             (((
                 dimension_codec.getTagByName("minecraft:dimension_type") as NBT_Tag_Compound)
@@ -368,32 +369,32 @@ export default class Connection extends EventEmitter {
         ));
     }
 
-    public sendServerBrand() {
-        this.sendPacket(new packets.Server.Play[24]("minecraft:brand",Buffer.from("mcSJS") as any));
+    public async sendServerBrand() {
+        return this.sendPacket(new packets.Server.Play[24]("minecraft:brand",Buffer.from("mcSJS") as any));
     }
 
-    public sendDifficulty(difficulty: Difficulty) {
-        this.sendPacket(new packets.Server.Play[14](difficulty,true));
+    public async sendDifficulty(difficulty: Difficulty) {
+        return this.sendPacket(new packets.Server.Play[14](difficulty,true));
     }
 
-    public sendPlayerAbilities() {
-        this.sendPacket(new packets.Server.Play[50](false, false, false, false, 0.05, 0.1));
+    public async sendPlayerAbilities() {
+        return this.sendPacket(new packets.Server.Play[50](false, false, false, false, 0.05, 0.1));
     }
 
-    public sendChangeSlotSelection(slot: number) {
+    public async sendChangeSlotSelection(slot: number) {
         if(slot < 0 || slot > 8) {
             throw new Error("Slot is out of range");
         }
         slot = Math.round(slot);
-        this.sendPacket(new packets.Server.Play[72](slot));
+        return this.sendPacket(new packets.Server.Play[72](slot));
     }
 
-    public sendPlayerPosAndLook() {
-        this.sendPacket(new packets.Server.Play[56](0,1,0,0,0,0,0,true));
+    public async sendPlayerPosAndLook() {
+        return this.sendPacket(new packets.Server.Play[56](0,80,0,0,0,0,1,false));
     }
 
-    public addPlayerToTab(player: Player) {
-        this.sendPacket(new packets.Server.Play[54](0,[
+    public async addPlayerToTab(player: Player) {
+        return this.sendPacket(new packets.Server.Play[54](0,[
             {
                 uuid: player.getUUID(),
                 name: player.getName(),
@@ -406,23 +407,43 @@ export default class Connection extends EventEmitter {
         ]));
     }
 
-    public removePlayerFromTab(player: Player) {
-        this.sendPacket(new packets.Server.Play[54](4,[
+    public async removePlayerFromTab(player: Player) {
+        return this.sendPacket(new packets.Server.Play[54](4,[
             {
                 uuid: player.getUUID(),
             }
         ]));
     }
 
-    public updateViewPosition() {
-        this.sendPacket(new packets.Server.Play[73](0,0));
+    public async updateViewPosition() {
+        return this.sendPacket(new packets.Server.Play[73](0,0));
     }
 
-    public sendChunkDataAndLight(chunk: Chunk) {
-        this.sendPacket(new packets.Server.Play[34](
+    public async sendChunkDataAndLight(chunk: Chunk) {
+        return this.sendPacket(new packets.Server.Play[34](
             0,0,
             chunk.getHeightmap(),
             chunk.getChunkData(),[],true,[],[],[],[],[],[]
         ));
+    }
+
+    public async sendSpawnPosition() {
+        return this.sendPacket(new packets.Server.Play[75](0,80,0,0));
+    }
+
+    public async sendRecipies() {
+        return this.sendPacket(new packets.Server.Play[102]([]));
+    }
+
+    public async sendTags() {
+        return this.sendPacket(new packets.Server.Play[103](tags));
+    }
+
+    public async sendEntityStatus(entity_id: number, entity_status: Entity_status) {
+        return this.sendPacket(new packets.Server.Play[27](entity_id,entity_status))
+    }
+
+    public async sendInitInventory() {
+        return this.sendPacket(new packets.Server.Play[20](0,0,new Array(46).fill({present: false}),{present: false}))
     }
 }

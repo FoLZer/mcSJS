@@ -8,6 +8,6 @@ export class Block {
     }
 
     public getNumId() {
-        return 0;
+        return 1;
     }
 }

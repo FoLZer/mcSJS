@@ -9,7 +9,7 @@ const gunzip = promisify(zlib.gunzip);
 const zlib_unzip = promisify(zlib.unzip);
 
 export class Region {
-    private fd?: fs.promises.FileHandle;
+    private fd: fs.promises.FileHandle | null;
     private in_use: number;
     private region_file_path: string;
 
@@ -33,6 +33,7 @@ export class Region {
         try {
             fs.writeFileSync(this.region_file_path,"",{"flag":'wx'});
         } catch(e) {}
+        this.fd = null;
     }
 
     public static chunkCoordsToRegion(chunk_x: number, chunk_z: number) {
@@ -42,7 +43,7 @@ export class Region {
     }
 
     private chunkCoordsToRegLoc(chunk_x: number, chunk_z: number) {
-        const offset = 4 * ((chunk_x % 32) + (chunk_z % 32) * 32);
+        const offset = 4 * ((chunk_x & 31) + (chunk_z & 31) * 32);
         return offset;
     }
 
@@ -97,6 +98,7 @@ export class Region {
             this.in_use--;
             if(this.in_use <= 0) {
                 this.fd.close();
+                this.fd = null;
             }
         }) as Promise<NBT_Tag_Compound | null>;
     }

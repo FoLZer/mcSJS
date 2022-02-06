@@ -1,4 +1,4 @@
-const tags = [
+export const tags = [
     {
         tag_type: "minecraft:block",
         tag_ar: [

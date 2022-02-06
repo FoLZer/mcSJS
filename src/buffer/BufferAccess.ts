@@ -79,6 +79,11 @@ export default class BufferAccess {
         return data;
     }
 
+    public writeUint64(data: bigint) {
+        this._buf.writeBigUInt64BE(data, this._pos);
+        this._pos += 8;
+    }
+
     public readInt64() {
         const data = this._buf.readBigInt64BE(this._pos);
         this._pos += 8;

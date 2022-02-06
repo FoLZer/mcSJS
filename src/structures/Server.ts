@@ -2,7 +2,7 @@ import { World } from "./World";
 import net from "net";
 import Connection from "../connection";
 import { Player } from "./Player";
-import { Difficulty, Dimensions } from "../Enums";
+import { Difficulty, Dimensions, Entity_status } from "../Enums";
 
 export class Server {
     _server: net.Server;
@@ -41,21 +41,27 @@ export class Server {
         })
 
         connection.once("login_done", async () => {
-            connection.sendJoinGame();
-            connection.sendServerBrand();
-            connection.sendDifficulty(this.difficulty);
-            connection.sendPlayerAbilities();
-            connection.sendChangeSlotSelection(0);
-            connection.sendPlayerPosAndLook();
-            connection.addPlayerToTab(player);
-            connection.addPlayerToTab(player);
-            connection.updateViewPosition();
+            await connection.sendJoinGame();
+            //await connection.sendServerBrand();
+            //await connection.sendDifficulty(this.difficulty);
+            
+            //await connection.sendPlayerAbilities();
+            //await connection.sendChangeSlotSelection(0);
+            //await connection.sendRecipies();
+            //await connection.sendTags();
+            await connection.sendEntityStatus(0,Entity_status.op_permission_level_0);
+            await connection.sendPlayerPosAndLook();
+            await connection.addPlayerToTab(player);
+            await connection.addPlayerToTab(player);
+            await connection.updateViewPosition();
+            await connection.sendInitInventory();
+            await connection.sendSpawnPosition();
             for(let x=-2;x<=2;x++) {
                 for(let z=-2;z<=2;z++) {
-                    connection.sendChunkDataAndLight(await this.worlds[0].getChunkAt(x,z));
+                    await connection.sendChunkDataAndLight(await this.worlds[0].getChunkAt(x,z));
                 }
             }
-            connection.sendPlayerPosAndLook();
+            await connection.sendPlayerPosAndLook();
         });
     }
 }

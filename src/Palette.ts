@@ -8,7 +8,7 @@ export class SingleValuedPalette {
     }
 
     public Serealize() {
-        const buf = Buffer.alloc(1+BufferAccess.getVarIntLength(this.data));
+        const buf = Buffer.alloc(1+BufferAccess.getVarIntLength(this.data)+1);
         const bufAcc = new BufferAccess(buf);
         bufAcc.writeUint8(0);
         bufAcc.writeVarInt(this.data);
@@ -32,7 +32,7 @@ export class IndirectPalette {
         const data_1 = [];
         let i = 0;
         for(const id of data) {
-            if(!palette_mapping[id]) {
+            if(palette_mapping[id] == undefined) {
                 palette_mapping[id] = i;
                 palette[i] = id;
                 i++;
@@ -41,6 +41,9 @@ export class IndirectPalette {
         }
         const data_compressed = [];
         const bits_per_id = Math.ceil(Math.log2(palette.length));
+        if(bits_per_id == 0) {
+            return new SingleValuedPalette(palette[0]);
+        }
         const v_mask = (1 << bits_per_id) - 1;
         let long = 0n;
         let shift = 0;
