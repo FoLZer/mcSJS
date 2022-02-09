@@ -97,11 +97,8 @@ export default class BufferAccess {
 
     public readString() {
         const length = this.readVarInt();
-        let value = "";
         const bytes = this.readBytes(length);
-        for(const byte of bytes) {
-            value += String.fromCharCode(byte);
-        }
+        const value = Buffer.from(bytes).toString("utf-8");
         return value;
     }
     

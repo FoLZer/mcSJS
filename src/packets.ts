@@ -1,8 +1,8 @@
 import BufferAccess from "./buffer/BufferAccess";
 import UUID from "uuid-1345";
 import { NBT_Tag, NBT_Tag_Compound } from "./NBT";
-import { CommandNode } from "./commands_graph";
-import { Difficulty } from "./Enums";
+import { CommandParsers, Difficulty } from "./Enums";
+import { CommandNode } from "./const_data";
 
 class Packet {}
 
@@ -278,7 +278,64 @@ const packets = {
                             s += Buffer.byteLength(node.parser);
                         }
                         if(((node.flags & 0x03) & 0x02) && node.properties) {
-                            //TODO: properties
+                            switch(node.parser) {
+                                case CommandParsers.double: {
+                                    s += 1;
+                                    if(node.properties.min) {
+                                        s += 8;
+                                    }
+                                    if(node.properties.max) {
+                                        s += 8;
+                                    }
+                                    break;
+                                }
+                                case CommandParsers.float: {
+                                    s += 1;
+                                    if(node.properties.min) {
+                                        s += 4;
+                                    }
+                                    if(node.properties.max) {
+                                        s += 4;
+                                    }
+                                    break;
+                                }
+                                case CommandParsers.integer: {
+                                    s += 1;
+                                    if(node.properties.min) {
+                                        s += 4;
+                                    }
+                                    if(node.properties.max) {
+                                        s += 4;
+                                    }
+                                    break;
+                                }
+                                case CommandParsers.long: {
+                                    s += 1;
+                                    if(node.properties.min) {
+                                        s += 8;
+                                    }
+                                    if(node.properties.max) {
+                                        s += 8;
+                                    }
+                                    break;
+                                }
+                                case CommandParsers.string: {
+                                    s += BufferAccess.getVarIntLength(node.properties);
+                                    break;
+                                }
+                                case CommandParsers.entity: {
+                                    s += 1;
+                                    break;
+                                }
+                                case CommandParsers.score_holder: {
+                                    s += 1;
+                                    break;
+                                }
+                                case CommandParsers.range: {
+                                    s += 1;
+                                    break;
+                                }
+                            }
                         }
                         if(((node.flags & 0x03) & 0x10) && node.suggestions_type) {
                             s += BufferAccess.getVarIntLength(Buffer.byteLength(node.suggestions_type));
@@ -305,7 +362,64 @@ const packets = {
                             bufAcc.writeString(node.parser);
                         }
                         if(((node.flags & 0x03) & 0x02) && node.properties) {
-                            //TODO: properties
+                            switch(node.parser) {
+                                case CommandParsers.double: {
+                                    bufAcc.writeInt8(Number(!!node.properties.min)+Number(!!node.properties.max));
+                                    if(node.properties.min) {
+                                        bufAcc.writeDouble(node.properties.min);
+                                    }
+                                    if(node.properties.max) {
+                                        bufAcc.writeDouble(node.properties.max);
+                                    }
+                                    break;
+                                }
+                                case CommandParsers.float: {
+                                    bufAcc.writeInt8(Number(!!node.properties.min)+Number(!!node.properties.max));
+                                    if(node.properties.min) {
+                                        bufAcc.writeFloat(node.properties.min);
+                                    }
+                                    if(node.properties.max) {
+                                        bufAcc.writeFloat(node.properties.max);
+                                    }
+                                    break;
+                                }
+                                case CommandParsers.integer: {
+                                    bufAcc.writeInt8(Number(!!node.properties.min)+Number(!!node.properties.max));
+                                    if(node.properties.min) {
+                                        bufAcc.writeInt32(node.properties.min);
+                                    }
+                                    if(node.properties.max) {
+                                        bufAcc.writeInt32(node.properties.max);
+                                    }
+                                    break;
+                                }
+                                case CommandParsers.long: {
+                                    bufAcc.writeInt8(Number(!!node.properties.min)+Number(!!node.properties.max));
+                                    if(node.properties.min) {
+                                        bufAcc.writeInt64(node.properties.min);
+                                    }
+                                    if(node.properties.max) {
+                                        bufAcc.writeInt64(node.properties.max);
+                                    }
+                                    break;
+                                }
+                                case CommandParsers.string: {
+                                    bufAcc.writeVarInt(node.properties);
+                                    break;
+                                }
+                                case CommandParsers.entity: {
+                                    bufAcc.writeInt8(node.properties);
+                                    break;
+                                }
+                                case CommandParsers.score_holder: {
+                                    bufAcc.writeInt8(node.properties);
+                                    break;
+                                }
+                                case CommandParsers.range: {
+                                    bufAcc.writeBoolean(node.properties);
+                                    break;
+                                }
+                            }
                         }
                         if(((node.flags & 0x03) & 0x10) && node.suggestions_type) {
                             bufAcc.writeString(node.suggestions_type);
@@ -818,6 +932,24 @@ const packets = {
                     return buf;
                 }
             },
+            66: class WorldBorderCenter extends ServerPacket {
+                x: number;
+                z: number;
+                
+                constructor(x: number, z: number) {
+                    super(66);
+                    this.x = x;
+                    this.z = z;
+                }
+
+                public Serealize(): Buffer {
+                    const buf = Buffer.allocUnsafe(16);
+                    const bufAcc = new BufferAccess(buf);
+                    bufAcc.writeDouble(this.x);
+                    bufAcc.writeDouble(this.z);
+                    return buf;
+                }
+            },
             72: class HeldItemChange extends ServerPacket {
                 slot: number;
 
@@ -870,6 +1002,24 @@ const packets = {
                     const pos = ((BigInt(this.x & 0x3FFFFFF) << 38n) | (BigInt(this.z & 0x3FFFFFF) << 12n) | BigInt(this.y & 0xFFF))
                     bufAcc.writeUint64(pos);
                     bufAcc.writeFloat(this.angle);
+                    return buf;
+                }
+            },
+            89: class TimeUpdate extends ServerPacket {
+                world_age: bigint;
+                time_of_day: bigint;
+
+                constructor(world_age: bigint, time_of_day: bigint) {
+                    super(89);
+                    this.world_age = world_age;
+                    this.time_of_day = time_of_day;
+                }
+
+                public Serealize(): Buffer {
+                    const buf = Buffer.allocUnsafe(16);
+                    const bufAcc = new BufferAccess(buf);
+                    bufAcc.writeInt64(this.world_age);
+                    bufAcc.writeInt64(this.time_of_day);
                     return buf;
                 }
             },

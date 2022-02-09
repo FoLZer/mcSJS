@@ -20,7 +20,7 @@ export class Server {
 
         this.difficulty = Difficulty.Peaceful;
 
-        this._server = net.createServer((socket: net.Socket) => {this.onConnection(socket)});
+        this._server = net.createServer((socket: net.Socket) => this.onConnection(socket));
 
         this._server.listen(port, () => {
             console.log("Server started on port", port);
@@ -42,26 +42,32 @@ export class Server {
 
         connection.once("login_done", async () => {
             await connection.sendJoinGame();
-            //await connection.sendServerBrand();
-            //await connection.sendDifficulty(this.difficulty);
-            
-            //await connection.sendPlayerAbilities();
-            //await connection.sendChangeSlotSelection(0);
-            //await connection.sendRecipies();
-            //await connection.sendTags();
+            await connection.sendServerBrand();
+            await connection.sendDifficulty(this.difficulty);
+            await connection.sendPlayerAbilities();
+            await connection.sendChangeSlotSelection(0);
+            await connection.sendRecipies();
+            await connection.sendTags();
             await connection.sendEntityStatus(0,Entity_status.op_permission_level_0);
+            //await connection.sendCommands();
+            await connection.sendUnlockRecipies();
             await connection.sendPlayerPosAndLook();
             await connection.addPlayerToTab(player);
             await connection.addPlayerToTab(player);
             await connection.updateViewPosition();
-            await connection.sendInitInventory();
-            await connection.sendSpawnPosition();
-            for(let x=-2;x<=2;x++) {
-                for(let z=-2;z<=2;z++) {
+            await connection.sendPlayerPosAndLook();
+            if(socket.destroyed) {
+                return;
+            }
+            for(let x=-3;x<=3;x++) {
+                for(let z=-3;z<=3;z++) {
                     await connection.sendChunkDataAndLight(await this.worlds[0].getChunkAt(x,z));
                 }
             }
-            await connection.sendPlayerPosAndLook();
+            await connection.sendUpdateTime();
+            await connection.sendWorldBorderCenter();
+            await connection.sendSpawnPosition();
+            await connection.sendInitInventory();
         });
     }
 }

@@ -8,7 +8,7 @@ import EventEmitter from "events";
 import { ConnectionState, Difficulty, Entity_status, NBT_Tag_type } from "./Enums";
 import { Player } from "./structures/Player";
 import { Chunk } from "./structures/Chunk";
-import tags from "./tags";
+import { commands, tags } from "./const_data";
 
 const key_pair = crypto.generateKeyPairSync("rsa" as any, {
     modulusLength: 1024,
@@ -168,9 +168,22 @@ const dimension_codec = new NBT_Tag_Compound("", [
     ])
 ])
 
+class ExternalResolvePromise {
+    public resolve!: (value: any) => void;
+    public reject!: (reason?: any) => void;
+    public promise: Promise<any>;
+
+    constructor() {
+        this.promise = new Promise((resolve, reject) => {
+            this.resolve = resolve;
+            this.reject = reject;
+        });
+    }
+}
+
 export default class Connection extends EventEmitter {
-    socket: net.Socket;
-    state;
+    private socket: net.Socket;
+    private state;
     username?: string;
     loginResp?: {
         id: string,
@@ -182,14 +195,24 @@ export default class Connection extends EventEmitter {
         }[]
     };
     connection_id: number;
+    private buffer: Buffer;
+    private current_packet_length = -1;
+    private reading_queue: ExternalResolvePromise[] = [];
 
     constructor(socket: net.Socket, connection_id: number) {
         super();
         this.socket = socket;
         this.state = ConnectionState.Handshake;
         this.connection_id = connection_id;
+        this.buffer = Buffer.allocUnsafe(0);
 
-        this.initiateConnection();
+        this.socket.on("data", (data) => {
+            this.buffer = Buffer.concat([this.buffer,data]);
+            this.tryReadingPackets();
+        })
+        this.socket.on("close", () => this.disconnect())
+
+        //this.initiateConnection();
     }
 
     public getId() {
@@ -205,68 +228,54 @@ export default class Connection extends EventEmitter {
         }
     }
 
-    private initiateConnection() {
-        let buf = Buffer.alloc(2097151);
-        let offset = 0;
-        let cur_packet_length = -1;
+    private readPacket(buf: Buffer): ClientPacket {
+        console.log("read_packet", buf);
+        const bufAcc = new BufferAccess(buf);
+        const id = bufAcc.readVarInt();
+        const rawdata = buf.slice(bufAcc.getPos());
+        //@ts-ignore
+        return new packets["Client"][ConnectionState[this.state]][id](rawdata);
+    }
 
-        const readPacket = (buf: Buffer): ClientPacket => {
-            console.log("read_packet", buf);
-            const bufAcc = new BufferAccess(buf);
-            bufAcc.readVarInt(); //length
-            const c_l = bufAcc.getPos();
-            const id = bufAcc.readVarInt();
-            const rawdata = buf.slice(bufAcc.getPos(), cur_packet_length-c_l+bufAcc.getPos());
-            //@ts-ignore
-            return new packets["Client"][ConnectionState[this.state]][id](rawdata);
+    private async tryReadingPackets() {
+        let promise;
+        if(this.reading_queue.length == 0) {
+            promise = new ExternalResolvePromise();
+            this.reading_queue.push(promise);
+        } else {
+            const prev_promise = this.reading_queue[this.reading_queue.length-1];
+            promise = new ExternalResolvePromise();
+            this.reading_queue.push(promise);
+            await prev_promise.promise;
         }
-
-        const readAvailablePackets = (data: Buffer) => {
-            if(cur_packet_length > 0) {
-                if(offset + data.byteLength >= cur_packet_length) {
-                    const copied = data.copy(buf, offset, 0, cur_packet_length - offset);
-                    const packet = readPacket(buf);
-                    this.onPacket(packet);
-                    cur_packet_length = -1;
-                    offset = 0;
-                    readAvailablePackets(data.slice(copied));
-                } else {
-                    offset += data.copy(buf, offset);
-                }
-            } else {
-                if(data.byteLength == 1 && data[0] == 0) {
-                    return;
-                }
-                let copied = data.copy(buf, offset, 0, Math.min(data.byteLength, 3 - offset));
-                offset += copied;
-                if(offset >= 3 || (offset == 2 && buf.readUInt8() == 1)) {
-                    const bufAcc = new BufferAccess(buf);
-                    cur_packet_length = bufAcc.readVarInt();
-                    if(data.byteLength - bufAcc.getPos() >= cur_packet_length) {
-                        data.copy(buf, offset, copied, cur_packet_length + copied - 2);
-                        const packet = readPacket(buf);
-                        this.onPacket(packet);
-                        const next_data = data.slice(cur_packet_length + copied - 2)
-                        cur_packet_length = -1;
-                        offset = 0;
-                        readAvailablePackets(next_data);
-                    } else {
-                        offset += data.copy(buf, offset, copied);
-                    }
-                }
+        if(this.current_packet_length < 0) {
+            try {
+                const bufAcc = new BufferAccess(this.buffer);
+                this.current_packet_length = bufAcc.readVarInt();
+            } catch(e) {
+                promise.resolve(null);
+                return;
             }
         }
-
-        this.socket.on("data", (data) => {
-            readAvailablePackets(data);
-        });
-
-        this.socket.on("close", () => {
-            this.disconnect();
-        })
+        if(this.buffer.byteLength >= this.current_packet_length) {
+            const s = BufferAccess.getVarIntLength(this.current_packet_length);
+            const buf = this.buffer.slice(s,s+this.current_packet_length);
+            const packet = this.readPacket(buf);
+            this.onPacket(packet);
+            this.buffer = this.buffer.slice(s+this.current_packet_length);
+            this.current_packet_length = -1;
+            if(this.buffer.byteLength > this.current_packet_length) {
+                this.tryReadingPackets();
+            }
+        }
+        
+        promise.resolve(null);
     }
 
     private sendPacket(packet: ServerPacket) {
+        if(this.socket.destroyed) {
+            return;
+        }
         const data = packet.Serealize();
         const id_length = BufferAccess.getVarIntLength(packet.getId());
         const length_size = BufferAccess.getVarIntLength(data.byteLength+id_length);
@@ -445,5 +454,21 @@ export default class Connection extends EventEmitter {
 
     public async sendInitInventory() {
         return this.sendPacket(new packets.Server.Play[20](0,0,new Array(46).fill({present: false}),{present: false}))
+    }
+
+    public async sendCommands() {
+        return this.sendPacket(new packets.Server.Play[18](commands, 0));
+    }
+
+    public async sendUnlockRecipies() {
+        return this.sendPacket(new packets.Server.Play[57](0,false,false,false,false,false,false,false,false,[],[]));
+    }
+
+    public async sendUpdateTime() {
+        return this.sendPacket(new packets.Server.Play[89](0n,0n));
+    }
+
+    public async sendWorldBorderCenter() {
+        return this.sendPacket(new packets.Server.Play[66](0,0));
     }
 }
